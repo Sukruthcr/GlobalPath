@@ -1,0 +1,1736 @@
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Globe, Calculator, Calendar, BarChart3, CheckCircle2, 
+  User as UserIcon, LogOut, Menu, X, ChevronRight, 
+  Download, Plus, Trash2, MessageSquare, Shield
+} from 'lucide-react';
+import { useAuth, AuthProvider } from './AuthContext';
+import { Country, RequirementDetail, cn } from './types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { askAssistant } from './services/geminiService';
+
+// --- Components ---
+
+const Navbar = () => {
+  const { user, logout } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+
+  const navLinks = [
+    { name: 'Countries', path: '/countries', icon: Globe },
+    { name: 'Eligibility', path: '/eligibility', icon: CheckCircle2 },
+    { name: 'Applications', path: '/applications', icon: Calendar },
+    { name: 'Compare', path: '/compare', icon: BarChart3 },
+    { name: 'Budget', path: '/budget', icon: Calculator },
+    { name: 'Timeline', path: '/timeline', icon: Calendar },
+  ];
+
+  return (
+    <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-bottom border-zinc-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <Globe className="text-white w-5 h-5" />
+            </div>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
+              GlobalPath
+            </span>
+          </Link>
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center space-x-8">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-indigo-600 flex items-center space-x-1",
+                  location.pathname === link.path ? "text-indigo-600" : "text-zinc-600"
+                )}
+              >
+                <link.icon className="w-4 h-4" />
+                <span>{link.name}</span>
+              </Link>
+            ))}
+            {user ? (
+              <div className="flex items-center space-x-4">
+                {user.role === 'admin' && (
+                  <Link to="/admin" className="text-sm font-medium text-zinc-600 hover:text-indigo-600 flex items-center space-x-1">
+                    <Shield className="w-4 h-4" />
+                    <span>Admin</span>
+                  </Link>
+                )}
+                <div className="h-8 w-px bg-zinc-200" />
+                <span className="text-sm font-medium text-zinc-900">{user.name}</span>
+                <button onClick={logout} className="p-2 text-zinc-500 hover:text-red-600 transition-colors">
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+
+          {/* Mobile Menu Toggle */}
+          <div className="md:hidden">
+            <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-zinc-600">
+              {isOpen ? <X /> : <Menu />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Nav */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-white border-t border-zinc-100 overflow-hidden"
+          >
+            <div className="px-4 py-4 space-y-4">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setIsOpen(false)}
+                  className="block text-base font-medium text-zinc-600 hover:text-indigo-600"
+                >
+                  {link.name}
+                </Link>
+              ))}
+              {!user && (
+                <Link
+                  to="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full text-center bg-indigo-600 text-white px-4 py-2 rounded-lg"
+                >
+                  Sign In
+                </Link>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  );
+};
+
+const LandingPage = () => {
+  return (
+    <div className="pt-24 pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Hero */}
+        <div className="text-center space-y-8 py-12">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl md:text-7xl font-bold tracking-tight text-zinc-900"
+          >
+            Study Abroad <br />
+            <span className="text-indigo-600">Made Super Simple.</span>
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-xl text-zinc-600 max-w-2xl mx-auto"
+          >
+            Confused about where to start? We guide you step-by-step through exams, 
+            documents, and costs in plain English. No complicated jargon, just clear paths.
+          </motion.p>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <Link to="/countries" className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+              Start Your Journey
+            </Link>
+            <Link to="/eligibility" className="w-full sm:w-auto px-8 py-4 bg-white text-zinc-900 border border-zinc-200 rounded-xl font-semibold hover:bg-zinc-50 transition-all">
+              Check Eligibility
+            </Link>
+          </motion.div>
+        </div>
+
+        {/* Features */}
+        <div className="grid md:grid-cols-3 gap-8 py-20">
+          {[
+            { title: 'Clear Guides', desc: 'We explain every requirement like a friend would. No confusing legal words.', icon: Globe },
+            { title: 'Smart Checklists', desc: 'Track your progress and download a simple PDF to keep yourself organized.', icon: CheckCircle2 },
+            { title: 'Budget Helper', desc: 'See exactly how much money you need in both INR and local currency.', icon: Calculator },
+          ].map((f, i) => (
+            <motion.div 
+              key={i}
+              whileHover={{ y: -5 }}
+              className="p-8 bg-white border border-zinc-100 rounded-3xl shadow-sm"
+            >
+              <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6">
+                <f.icon className="text-indigo-600 w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900 mb-2">{f.title}</h3>
+              <p className="text-zinc-600">{f.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EligibilityChecker = () => {
+  const [scores, setScores] = useState({
+    percentage: 0,
+    backlogs: 0,
+    ielts: 0,
+    experience: 0,
+    budget: 0
+  });
+  const [results, setResults] = useState<string[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+
+  useEffect(() => {
+    fetch('/api/countries').then(res => res.json()).then(setCountries);
+  }, []);
+
+  const checkEligibility = () => {
+    const res: string[] = [];
+    
+    // Germany Rules
+    if (scores.percentage >= 75 && scores.backlogs === 0 && scores.ielts >= 6.5) {
+      res.push("✅ You are eligible for Germany Public Universities (Tuition Free!)");
+    } else if (scores.backlogs > 5) {
+      res.push("🔴 High Risk for Germany: Public universities rarely accept more than 5 backlogs.");
+    } else if (scores.percentage >= 65 && scores.ielts >= 6.0) {
+      res.push("✅ Germany Private Universities are a strong option for your profile.");
+    }
+
+    // Canada Rules
+    if (scores.ielts >= 6.0) {
+      res.push("✅ Canada SDS Category: You meet the IELTS requirement for fast-track visa.");
+    } else if (scores.ielts > 0) {
+      res.push("⚠️ Canada Non-SDS: Your IELTS is below 6.0. Visa risk is higher; consider retaking.");
+    }
+
+    // USA Rules
+    if (scores.percentage >= 60 && scores.budget >= 25000) {
+      res.push("✅ USA: Your profile and budget fit well. Focus on GRE for top-tier schools.");
+    } else if (scores.budget < 15000 && scores.budget > 0) {
+      res.push("⚠️ USA Budget Alert: $15k is very low for USA. Consider Germany or scholarships.");
+    }
+
+    // Australia Rules
+    if (scores.percentage >= 65 && scores.ielts >= 6.5) {
+      res.push("✅ Australia: You meet the requirements for most Group of Eight (Go8) universities.");
+    }
+
+    if (scores.experience >= 2) {
+      res.push("🌟 Bonus: Your work experience strengthens applications for MBA and specialized Masters.");
+    }
+
+    if (res.length === 0) {
+      res.push("ℹ️ Please enter more details to get a personalized recommendation.");
+    }
+
+    setResults(res);
+  };
+
+  return (
+    <div className="pt-24 pb-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-bold text-zinc-900 mb-4">Eligibility Checker</h2>
+        <p className="text-zinc-600">Enter your profile details to see which countries fit you best.</p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-12">
+        <div className="bg-white border border-zinc-200 rounded-3xl p-8 space-y-6 shadow-sm">
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Undergrad Percentage (%)</label>
+            <input 
+              type="number" 
+              value={scores.percentage} 
+              onChange={(e) => setScores({...scores, percentage: Number(e.target.value)})}
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="e.g. 75"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Number of Backlogs</label>
+            <input 
+              type="number" 
+              value={scores.backlogs} 
+              onChange={(e) => setScores({...scores, backlogs: Number(e.target.value)})}
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">IELTS / PTE Score</label>
+            <input 
+              type="number" 
+              step="0.5"
+              value={scores.ielts} 
+              onChange={(e) => setScores({...scores, ielts: Number(e.target.value)})}
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="e.g. 6.5"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Work Experience (Years)</label>
+            <input 
+              type="number" 
+              value={scores.experience} 
+              onChange={(e) => setScores({...scores, experience: Number(e.target.value)})}
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Total Budget (in USD)</label>
+            <input 
+              type="number" 
+              value={scores.budget} 
+              onChange={(e) => setScores({...scores, budget: Number(e.target.value)})}
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="e.g. 25000"
+            />
+          </div>
+          <button 
+            onClick={checkEligibility}
+            className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+          >
+            Check My Eligibility
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          <h3 className="text-xl font-bold text-zinc-900">Your Recommendations</h3>
+          {results.length > 0 ? (
+            <div className="space-y-4">
+              {results.map((res, i) => (
+                <motion.div 
+                  key={i}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-900 font-medium"
+                >
+                  {res}
+                </motion.div>
+              ))}
+              <div className="p-6 bg-zinc-900 text-white rounded-3xl mt-8">
+                <p className="text-sm font-bold uppercase text-zinc-400 mb-2">Agent-Free Mode</p>
+                <p className="text-lg leading-relaxed">
+                  "This guide is designed to help you apply directly. You don't need an agent if you follow these steps carefully."
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="p-12 border-2 border-dashed border-zinc-200 rounded-3xl text-center text-zinc-400">
+              Enter your details to see recommendations.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ApplicationTracker = () => {
+  const { progress, updateProgress, user } = useAuth();
+  const [newApp, setNewApp] = useState({ university: '', course: '', deadline: '', status: 'Draft' as any });
+  const [isAdding, setIsAdding] = useState(false);
+
+  if (!user) return <div className="pt-32 text-center">Please sign in to track your applications.</div>;
+
+  const applications = progress.applications || [];
+
+  const addApplication = () => {
+    const app = { ...newApp, id: Math.random().toString(36).substr(2, 9) };
+    updateProgress({ applications: [...applications, app] });
+    setNewApp({ university: '', course: '', deadline: '', status: 'Draft' });
+    setIsAdding(false);
+  };
+
+  const deleteApplication = (id: string) => {
+    updateProgress({ applications: applications.filter(a => a.id !== id) });
+  };
+
+  const updateStatus = (id: string, status: any) => {
+    updateProgress({
+      applications: applications.map(a => a.id === id ? { ...a, status } : a)
+    });
+  };
+
+  return (
+    <div className="pt-24 pb-16 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-zinc-900">University Applications</h2>
+          <p className="text-zinc-500">Track your progress for each university you're applying to.</p>
+        </div>
+        <button 
+          onClick={() => setIsAdding(true)}
+          className="flex items-center space-x-2 bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-all"
+        >
+          <Plus className="w-5 h-5" />
+          <span>Add University</span>
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {applications.map((app) => (
+          <div key={app.id} className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-zinc-900">{app.university}</h3>
+                <p className="text-sm text-zinc-500">{app.course}</p>
+              </div>
+              <button onClick={() => deleteApplication(app.id)} className="text-zinc-400 hover:text-red-600">
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-500">Deadline</span>
+                <span className="font-bold text-zinc-900">{new Date(app.deadline).toLocaleDateString()}</span>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-400 uppercase">Status</label>
+                <select 
+                  value={app.status} 
+                  onChange={(e) => updateStatus(app.id, e.target.value)}
+                  className="w-full p-2 rounded-lg border border-zinc-100 bg-zinc-50 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                >
+                  <option value="Draft">Draft</option>
+                  <option value="Applied">Applied</option>
+                  <option value="Documents Pending">Documents Pending</option>
+                  <option value="Offer Received">Offer Received</option>
+                  <option value="Rejected">Rejected</option>
+                  <option value="Visa Stage">Visa Stage</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        ))}
+        {applications.length === 0 && !isAdding && (
+          <div className="col-span-full p-12 border-2 border-dashed border-zinc-200 rounded-3xl text-center text-zinc-400">
+            No applications added yet. Click "Add University" to start tracking.
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {isAdding && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl"
+            >
+              <h3 className="text-2xl font-bold text-zinc-900 mb-6">Add New Application</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-zinc-700">University Name</label>
+                  <input 
+                    type="text" 
+                    value={newApp.university} 
+                    onChange={(e) => setNewApp({...newApp, university: e.target.value})}
+                    className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g. Technical University of Munich"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-zinc-700">Course Name</label>
+                  <input 
+                    type="text" 
+                    value={newApp.course} 
+                    onChange={(e) => setNewApp({...newApp, course: e.target.value})}
+                    className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g. M.Sc. Data Science"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-zinc-700">Deadline</label>
+                  <input 
+                    type="date" 
+                    value={newApp.deadline} 
+                    onChange={(e) => setNewApp({...newApp, deadline: e.target.value})}
+                    className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    onClick={() => setIsAdding(false)}
+                    className="flex-1 py-3 border border-zinc-200 rounded-xl font-bold hover:bg-zinc-50 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={addApplication}
+                    className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const CountryList = () => {
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/countries')
+      .then(res => res.json())
+      .then(data => {
+        setCountries(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="pt-32 text-center">Loading countries...</div>;
+
+  return (
+    <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 className="text-3xl font-bold text-zinc-900 mb-8">Explore Destinations</h2>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {countries.map((country) => (
+          <Link 
+            key={country.id} 
+            to={`/countries/${country.name.toLowerCase().replace(/\s+/g, '-')}`}
+            className="group relative overflow-hidden rounded-3xl bg-white border border-zinc-200 p-6 hover:shadow-xl transition-all"
+          >
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-2xl font-bold text-zinc-900">{country.name}</h3>
+              <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-600 transition-colors">
+                <ChevronRight className="w-5 h-5 text-indigo-600 group-hover:text-white" />
+              </div>
+            </div>
+            <div className="space-y-2 text-sm text-zinc-600">
+              <p><strong>Exams:</strong> {country.exams.map(e => e.name).join(', ')}</p>
+              <p><strong>Work Rights:</strong> {country.work_rights}</p>
+              <p><strong>PR Chance:</strong> {country.comparison_data.prChance}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CountryDetail = () => {
+  const { countryName: slug } = useParams();
+  const [country, setCountry] = useState<Country | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { progress, updateProgress, user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
+
+  const getVisaRisk = () => {
+    if (!country) return { level: 'Low', color: 'text-emerald-600', bg: 'bg-emerald-50' };
+    const diff = country.comparison_data.visaDifficulty;
+    if (diff === 'Competitive') return { level: 'High Risk', color: 'text-red-600', bg: 'bg-red-50' };
+    if (diff === 'Moderate') return { level: 'Medium Risk', color: 'text-amber-600', bg: 'bg-amber-50' };
+    return { level: 'Low Risk', color: 'text-emerald-600', bg: 'bg-emerald-50' };
+  };
+
+  const visaRisk = getVisaRisk();
+
+  useEffect(() => {
+    setLoading(true);
+    fetch('/api/countries')
+      .then(res => res.json())
+      .then(data => {
+        const found = data.find((c: Country) => 
+          c.name.toLowerCase().replace(/\s+/g, '-') === slug?.toLowerCase() ||
+          c.name.toLowerCase() === slug?.toLowerCase()?.replace(/-/g, ' ')
+        );
+        setCountry(found);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [slug]);
+
+  if (loading) return (
+    <div className="pt-32 flex flex-col items-center justify-center space-y-4">
+      <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <p className="text-zinc-500 font-medium">Fetching country details...</p>
+    </div>
+  );
+
+  if (!country) return (
+    <div className="pt-32 text-center space-y-4">
+      <h2 className="text-2xl font-bold text-zinc-900">Country not found.</h2>
+      <p className="text-zinc-500">We couldn't find the details for "{slug}".</p>
+      <Link to="/countries" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold">
+        Back to Destinations
+      </Link>
+    </div>
+  );
+
+  const completedDocs = progress.checklist[country.name] || [];
+  const toggleDoc = (doc: string) => {
+    const newDocs = completedDocs.includes(doc) 
+      ? completedDocs.filter(d => d !== doc)
+      : [...completedDocs, doc];
+    updateProgress({
+      checklist: { ...progress.checklist, [country.name]: newDocs }
+    });
+  };
+
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(22);
+    doc.setTextColor(79, 70, 229); // Indigo-600
+    doc.text(`${country.name} Study Abroad Roadmap`, 20, 20);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100, 116, 139); // Slate-500
+    doc.text(`Student: ${user?.name || 'Guest'}`, 20, 30);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 38);
+    
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42); // Slate-900
+    doc.text('Document Checklist', 20, 50);
+
+    const tableData = country.documents.map(d => [
+      d.category || 'Other',
+      d.name,
+      d.what || 'N/A',
+      d.mandatory || 'Mandatory',
+      d.time || d.processing_time || 'N/A',
+      d.cost || 'N/A',
+      completedDocs.includes(d.name) ? '✓ COMPLETED' : '☐ PENDING'
+    ]);
+
+    autoTable(doc, {
+      startY: 55,
+      head: [['Category', 'Document', 'What is it?', 'Type', 'Time', 'Cost', 'Status']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [79, 70, 229] },
+      styles: { fontSize: 7, cellPadding: 2 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 25 }, 1: { fontStyle: 'bold' } }
+    });
+
+    doc.save(`${country.name}_GlobalPath_Checklist.pdf`);
+  };
+
+  return (
+    <div className="pt-24 pb-16 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-bold text-zinc-900">{country.name}</h1>
+            <div className="px-3 py-1 bg-zinc-900 text-white text-[10px] font-bold rounded-full uppercase tracking-widest">
+              Agent-Free Mode
+            </div>
+          </div>
+          <p className="text-zinc-600">Complete roadmap for international students</p>
+        </div>
+        <button 
+          onClick={downloadPDF}
+          className="flex items-center space-x-2 bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-all"
+        >
+          <Download className="w-5 h-5" />
+          <span>Download Checklist</span>
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-4 gap-8">
+        {/* Sidebar Tabs */}
+        <div className="md:col-span-1 space-y-2">
+          {['Overview', 'Checklist', 'Visa Process', 'Financials', 'Timeline', 'Scholarships', 'Visa Prep', 'Post-Arrival'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab.toLowerCase())}
+              className={cn(
+                "w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all",
+                activeTab === tab.toLowerCase() 
+                  ? "bg-indigo-50 text-indigo-600 border border-indigo-100" 
+                  : "text-zinc-600 hover:bg-zinc-50"
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Content Area */}
+        <div className="md:col-span-3 bg-white border border-zinc-200 rounded-3xl p-8 shadow-sm">
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              <section>
+                <h2 className="text-2xl font-bold text-zinc-900 mb-6">General Information</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-zinc-50 rounded-2xl">
+                    <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Required Exams</p>
+                    <p className="text-zinc-900 font-medium">{country.exams.map(e => e.name).join(', ')}</p>
+                  </div>
+                  <div className="p-4 bg-zinc-50 rounded-2xl">
+                    <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Work Rights</p>
+                    <p className="text-zinc-900 font-medium">{country.work_rights}</p>
+                  </div>
+                  <div className="p-4 bg-zinc-50 rounded-2xl">
+                    <p className="text-xs text-zinc-500 uppercase font-bold mb-1">PR Possibility</p>
+                    <p className="text-zinc-900 font-medium">{country.pr_possibility}</p>
+                  </div>
+                  <div className="p-4 bg-zinc-50 rounded-2xl">
+                    <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Visa Time</p>
+                    <p className="text-zinc-900 font-medium">{country.comparison_data.visaTime}</p>
+                  </div>
+                  <div className={cn("p-4 rounded-2xl flex flex-col justify-center", visaRisk.bg)}>
+                    <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Visa Risk</p>
+                    <p className={cn("font-bold", visaRisk.color)}>{visaRisk.level}</p>
+                  </div>
+                </div>
+              </section>
+
+              {country.part_time_info && (
+                <section>
+                  <h2 className="text-2xl font-bold text-zinc-900 mb-6">Part-Time Work & Income</h2>
+                  <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-3xl">
+                    <div className="grid sm:grid-cols-2 gap-8">
+                      <div>
+                        <p className="text-xs font-bold text-indigo-400 uppercase mb-1">Allowed Hours</p>
+                        <p className="text-xl font-bold text-indigo-900">{country.part_time_info.hours_per_week}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-indigo-400 uppercase mb-1">Average Wage</p>
+                        <p className="text-xl font-bold text-indigo-900">{country.part_time_info.avg_wage}/hour</p>
+                      </div>
+                    </div>
+                    <div className="mt-6 pt-6 border-t border-indigo-100">
+                      <p className="text-sm text-indigo-700 leading-relaxed">
+                        <strong>Note:</strong> {country.part_time_info.notes}
+                      </p>
+                      <p className="text-xs text-indigo-500 mt-4 italic">
+                        “Part-time job helps with daily expenses but cannot fully replace financial proof for visa.”
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              <section>
+                <h2 className="text-2xl font-bold text-zinc-900 mb-6">Required Exams (Explained)</h2>
+                <div className="space-y-4">
+                  {country.exams.map((exam, i) => (
+                    <div key={i} className="p-6 border border-zinc-100 rounded-2xl bg-zinc-50/50">
+                      <h3 className="text-lg font-bold text-indigo-600 mb-3">{exam.name}</h3>
+                      <div className="grid md:grid-cols-2 gap-4 text-sm">
+                        <p><span className="font-bold text-zinc-700">What is it:</span> {exam.what}</p>
+                        <p><span className="font-bold text-zinc-700">Why needed:</span> {exam.why}</p>
+                        <p><span className="font-bold text-zinc-700">Where to write:</span> {exam.where_get}</p>
+                        <p><span className="font-bold text-zinc-700">Where to submit:</span> {exam.where_submit}</p>
+                        {exam.cost && <p><span className="font-bold text-zinc-700">Cost:</span> {exam.cost}</p>}
+                        {exam.validity && <p><span className="font-bold text-zinc-700">Validity:</span> {exam.validity}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-bold text-zinc-900 mb-6">Average Living Cost</h2>
+                <p className="text-zinc-600 mb-6 italic">“This is the average money you will spend to live comfortably as a student.”</p>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-500">Accommodation</span>
+                      <span className="font-bold text-zinc-900">{country.living_costs.accommodation} Local</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-500">Food</span>
+                      <span className="font-bold text-zinc-900">{country.living_costs.food} Local</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-500">Transport</span>
+                      <span className="font-bold text-zinc-900">{country.living_costs.transport} Local</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-500">Health Insurance</span>
+                      <span className="font-bold text-zinc-900">{country.living_costs.insurance} Local</span>
+                    </div>
+                  </div>
+                  <div className="bg-indigo-50 p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+                    <p className="text-xs font-bold text-indigo-400 uppercase mb-1">Monthly Estimate</p>
+                    <p className="text-2xl font-bold text-indigo-600">
+                      {(country.living_costs.accommodation + country.living_costs.food + country.living_costs.transport + country.living_costs.insurance + country.living_costs.misc)} Local
+                    </p>
+                    <div className="mt-4 pt-4 border-t border-indigo-100 w-full">
+                      <p className="text-xs font-bold text-indigo-400 uppercase mb-1">Yearly Estimate</p>
+                      <p className="text-xl font-bold text-indigo-600">
+                        {(country.living_costs.accommodation + country.living_costs.food + country.living_costs.transport + country.living_costs.insurance + country.living_costs.misc) * 12} Local
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {country.city_costs && country.city_costs.length > 0 && (
+                  <div className="mt-12">
+                    <h3 className="text-xl font-bold text-zinc-900 mb-6">City-Level Breakdown</h3>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      {country.city_costs.map((city, i) => (
+                        <div key={i} className="p-6 border border-zinc-100 rounded-3xl bg-white shadow-sm">
+                          <h4 className="font-bold text-zinc-900 mb-4">{city.name}</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-zinc-500">Rent (Center)</span>
+                              <span className="font-medium">Local {city.rent_center}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-500">Rent (Outside)</span>
+                              <span className="font-medium">Local {city.rent_outside}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-500">Transport Pass</span>
+                              <span className="font-medium">Local {city.transport}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-500">Avg. Meal</span>
+                              <span className="font-medium">Local {city.meals}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'checklist' && (
+            <div className="space-y-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-zinc-900">Document Checklist</h2>
+                <span className="text-sm font-bold text-indigo-600">
+                  {Math.round((completedDocs.length / country.documents.length) * 100)}% Complete
+                </span>
+              </div>
+              
+              {(Object.entries(
+                country.documents.reduce((acc, doc) => {
+                  const cat = doc.category || 'Other';
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(doc);
+                  return acc;
+                }, {} as Record<string, RequirementDetail[]>)
+              ) as [string, RequirementDetail[]][]).map(([category, docs]) => (
+                <div key={category} className="space-y-4">
+                  <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-8 h-[1px] bg-zinc-200"></span>
+                    {category}
+                  </h3>
+                  <div className="space-y-4">
+                    {docs.map((doc) => (
+                      <div 
+                        key={doc.name}
+                        className={cn(
+                          "p-6 rounded-2xl border transition-all",
+                          completedDocs.includes(doc.name) 
+                            ? "bg-indigo-50 border-indigo-200" 
+                            : "bg-white border-zinc-200"
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-bold text-zinc-900">{doc.name}</h4>
+                          <button
+                            onClick={() => toggleDoc(doc.name)}
+                            className={cn(
+                              "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all",
+                              completedDocs.includes(doc.name)
+                                ? "bg-indigo-600 border-indigo-600 text-white"
+                                : "border-zinc-200 text-transparent"
+                            )}
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4 text-sm text-zinc-600">
+                          <p><span className="font-bold text-zinc-700">What is it:</span> {doc.what}</p>
+                          <p><span className="font-bold text-zinc-700">Why needed:</span> {doc.why}</p>
+                          {doc.who_issues && <p><span className="font-bold text-zinc-700">Who issues it:</span> {doc.who_issues}</p>}
+                          <p><span className="font-bold text-zinc-700">Where to get:</span> {doc.where_get}</p>
+                          <p><span className="font-bold text-zinc-700">Where to submit:</span> {doc.where_submit}</p>
+                          {doc.cost && <p><span className="font-bold text-zinc-700">Cost:</span> {doc.cost}</p>}
+                          {(doc.time || doc.processing_time) && <p><span className="font-bold text-zinc-700">Processing Time:</span> {doc.time || doc.processing_time}</p>}
+                          {doc.mandatory && <p><span className="font-bold text-zinc-700">Status:</span> {doc.mandatory}</p>}
+                        </div>
+                        {doc.mistakes && (
+                          <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-xl">
+                            <p className="text-xs text-red-800 font-bold mb-1 uppercase flex items-center gap-1">
+                              <X className="w-3 h-3" />
+                              Common Mistakes
+                            </p>
+                            <p className="text-sm text-red-700">{doc.mistakes}</p>
+                          </div>
+                        )}
+                        {doc.category === 'Financial Documents' && completedDocs.includes(doc.name) && (
+                          <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                            <p className="text-xs text-amber-800 font-bold mb-1 uppercase flex items-center gap-1">
+                              <Shield className="w-3 h-3" />
+                              Smart Risk Alert
+                            </p>
+                            <p className="text-sm text-amber-700">
+                              Ensure the balance is at least 10% more than the requirement to account for exchange rate changes.
+                            </p>
+                          </div>
+                        )}
+                        {doc.validity && (
+                          <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                            <p className="text-xs text-blue-800 font-bold mb-1 uppercase flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              Validity Warning
+                            </p>
+                            <p className="text-sm text-blue-700">
+                              This document is valid for <strong>{doc.validity}</strong>. Check the expiry before your visa appointment.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === 'visa process' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-zinc-900">Visa Steps</h2>
+              <div className="space-y-4">
+                {country.visa_steps.map((step, i) => (
+                  <div key={i} className="flex items-start space-x-4">
+                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 font-bold">
+                      {i + 1}
+                    </div>
+                    <div className="pt-1">
+                      <p className="text-zinc-900 font-medium">{step}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'financials' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-zinc-900">Financial Proof Explanation</h2>
+              <p className="text-zinc-600 italic">“This is the amount you must show in your bank account to prove you can afford your studies.”</p>
+              
+              <div className="grid gap-6">
+                <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
+                  <h3 className="text-sm font-bold text-indigo-400 uppercase mb-2">Minimum Bank Balance Required</h3>
+                  <p className="text-indigo-900 font-bold text-xl">{country.financial_requirement}</p>
+                  <p className="text-sm text-indigo-600 mt-2 italic">Usually covers 1st year tuition + living expenses.</p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
+                    <h3 className="text-sm font-bold text-zinc-500 uppercase mb-3">Acceptable Documents</h3>
+                    <ul className="space-y-2 text-sm text-zinc-600 list-disc pl-4">
+                      <li>Savings Bank Balance</li>
+                      <li>Fixed Deposits (FDs)</li>
+                      <li>Education Loan Sanction Letter</li>
+                      <li>Provident Fund (GPF/EPF)</li>
+                      <li>Blocked Account (Germany only)</li>
+                    </ul>
+                  </div>
+                  <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
+                    <h3 className="text-sm font-bold text-zinc-500 uppercase mb-3">Who can Sponsor?</h3>
+                    <ul className="space-y-2 text-sm text-zinc-600 list-disc pl-4">
+                      <li>Self (The Student)</li>
+                      <li>Parents (Father/Mother)</li>
+                      <li>Blood Relatives (Grandparents/Siblings)</li>
+                      <li>Third-party sponsors (with Affidavit)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
+                  <h3 className="text-sm font-bold text-zinc-500 uppercase mb-3">Important Rules</h3>
+                  <ul className="space-y-2 text-sm text-zinc-600 list-disc pl-4">
+                    <li><strong>Fund Maintenance:</strong> Funds should typically be 1-6 months old depending on the country.</li>
+                    <li><strong>Liquidity:</strong> Money must be in a liquid state (easily withdrawable).</li>
+                    <li><strong>Affidavit:</strong> If someone else is paying, they must sign an 'Affidavit of Support'.</li>
+                    <li><strong>ITR:</strong> Sponsors must show last 3 years of Income Tax Returns.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <Link to="/budget" className="inline-flex items-center space-x-2 text-indigo-600 font-bold hover:underline">
+                  <span>Open Detailed Budget Calculator</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'timeline' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-zinc-900">Application Timeline</h2>
+              <div className="relative pl-8 space-y-8 before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-200">
+                {country.timeline.map((item, i) => (
+                  <div key={i} className="relative">
+                    <div className="absolute -left-[25px] top-1 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white shadow-sm" />
+                    <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-100">
+                      <p className="text-xs font-bold text-indigo-600 uppercase mb-1">Month {item.month}</p>
+                      <p className="text-zinc-900 font-bold mb-2">{item.step}</p>
+                      <p className="text-sm text-zinc-600 leading-relaxed">{item.explanation}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'scholarships' && (
+            <div className="space-y-8">
+              <h2 className="text-2xl font-bold text-zinc-900">Scholarships & Funding</h2>
+              <div className="grid gap-6">
+                {country.scholarships?.map((s, i) => (
+                  <div key={i} className="p-6 bg-white border border-zinc-200 rounded-3xl shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-xl font-bold text-indigo-600">{s.name}</h3>
+                      <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full">{s.amount}</span>
+                    </div>
+                    <div className="space-y-4">
+                      <p className="text-sm text-zinc-600"><span className="font-bold text-zinc-900">Eligibility:</span> {s.eligibility}</p>
+                      <p className="text-sm text-zinc-600"><span className="font-bold text-zinc-900">Deadline:</span> {s.deadline}</p>
+                      <a 
+                        href={s.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center space-x-2 text-indigo-600 text-sm font-bold hover:underline"
+                      >
+                        <span>Official Website</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+                {(!country.scholarships || country.scholarships.length === 0) && (
+                  <div className="p-12 border-2 border-dashed border-zinc-200 rounded-3xl text-center text-zinc-400">
+                    No scholarship data available for this country yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'visa prep' && (
+            <div className="space-y-8">
+              <h2 className="text-2xl font-bold text-zinc-900">Visa Interview Preparation</h2>
+              <div className="space-y-6">
+                {country.visa_prep?.map((tip, i) => (
+                  <div key={i} className="space-y-4">
+                    <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
+                      <p className="text-sm font-bold text-zinc-400 uppercase mb-2">Question {i + 1}</p>
+                      <p className="text-lg font-bold text-zinc-900 mb-4">{tip.question}</p>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                          <p className="text-xs font-bold text-emerald-600 uppercase mb-1">What to say</p>
+                          <p className="text-sm text-emerald-800">{tip.answer}</p>
+                        </div>
+                        <div className="p-4 bg-red-50 border border-red-100 rounded-2xl">
+                          <p className="text-xs font-bold text-red-600 uppercase mb-1">What NOT to say</p>
+                          <p className="text-sm text-red-800">{tip.dont_say}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="p-8 bg-indigo-600 text-white rounded-3xl">
+                  <h4 className="text-lg font-bold mb-4">Pro Interview Tips</h4>
+                  <ul className="space-y-3 text-sm text-indigo-100 list-disc pl-4">
+                    <li>Maintain eye contact and a confident posture.</li>
+                    <li>Be honest and consistent with your application documents.</li>
+                    <li>Clearly demonstrate your intent to return to your home country.</li>
+                    <li>Know your course curriculum and university details thoroughly.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'post-arrival' && (
+            <div className="space-y-8">
+              <h2 className="text-2xl font-bold text-zinc-900">Post-Arrival Survival Guide</h2>
+              <div className="space-y-4">
+                {country.post_arrival_guide?.map((step, i) => (
+                  <div key={i} className="p-6 bg-white border border-zinc-200 rounded-3xl shadow-sm flex gap-6">
+                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center flex-shrink-0">
+                      <span className="text-indigo-600 font-bold">{i + 1}</span>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-bold text-zinc-900">{step.title}</h3>
+                        <span className={cn(
+                          "px-2 py-0.5 text-[10px] font-bold rounded-full uppercase",
+                          step.priority === 'High' ? "bg-red-100 text-red-600" : "bg-zinc-100 text-zinc-600"
+                        )}>
+                          {step.priority} Priority
+                        </span>
+                      </div>
+                      <p className="text-sm text-zinc-600 leading-relaxed">{step.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BudgetCalculator = () => {
+  const [tuition, setTuition] = useState(0);
+  const [living, setLiving] = useState(0);
+  const [duration, setDuration] = useState(1);
+  const [country, setCountry] = useState('United States');
+  const [countries, setCountries] = useState<Country[]>([]);
+
+  useEffect(() => {
+    fetch('/api/countries').then(res => res.json()).then(setCountries);
+  }, []);
+
+  useEffect(() => {
+    const selectedCountry = countries.find(c => c.name === country);
+    if (selectedCountry) {
+      const costs = selectedCountry.living_costs;
+      const annualLiving = (costs.accommodation + costs.food + costs.transport + costs.insurance + costs.misc) * 12;
+      setLiving(annualLiving);
+      // Set a default tuition based on comparison data if available
+      setTuition(selectedCountry.comparison_data.tuition);
+    }
+  }, [country, countries]);
+
+  const exchangeRates: Record<string, { rate: number, symbol: string, code: string }> = {
+    'United States': { rate: 83.5, symbol: '$', code: 'USD' },
+    'Germany': { rate: 90.2, symbol: '€', code: 'EUR' },
+    'Canada': { rate: 61.5, symbol: 'C$', code: 'CAD' },
+    'Australia': { rate: 54.8, symbol: 'A$', code: 'AUD' },
+    'United Kingdom': { rate: 105.8, symbol: '£', code: 'GBP' },
+    'New Zealand': { rate: 50.8, symbol: 'NZ$', code: 'NZD' },
+    'Other': { rate: 83.5, symbol: '$', code: 'USD' }
+  };
+
+  const currentRate = exchangeRates[country] || exchangeRates['Other'];
+  
+  const totalLocal = (tuition + living) * duration;
+  const bufferLocal = totalLocal * 0.1;
+  const totalWithBufferLocal = totalLocal + bufferLocal;
+  
+  const totalINR = totalWithBufferLocal * currentRate.rate;
+  
+  const minProofLocal = tuition + living;
+  const minProofINR = minProofLocal * currentRate.rate;
+
+  const formatINR = (val: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(val);
+  };
+
+  const formatLocal = (val: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currentRate.code,
+      maximumFractionDigits: 0
+    }).format(val);
+  };
+
+  return (
+    <div className="pt-24 pb-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-zinc-900">Budget Calculator</h2>
+        <p className="text-zinc-500">Calculate your expenses in both Indian Rupees (₹) and local currency.</p>
+      </div>
+      
+      <div className="grid md:grid-cols-2 gap-8">
+        <div className="bg-white border border-zinc-200 rounded-3xl p-8 space-y-6 shadow-sm">
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Target Country</label>
+            <select 
+              value={country} 
+              onChange={(e) => setCountry(e.target.value)}
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+            >
+              {Object.keys(exchangeRates).map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Tuition Fee (per year in {currentRate.code})</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">{currentRate.symbol}</span>
+              <input 
+                type="number" 
+                value={tuition} 
+                onChange={(e) => setTuition(Number(e.target.value))}
+                className="w-full pl-10 p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="0"
+              />
+            </div>
+            <p className="text-xs text-zinc-400">≈ {formatINR(tuition * currentRate.rate)}</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Living Cost (per year in {currentRate.code})</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">{currentRate.symbol}</span>
+              <input 
+                type="number" 
+                value={living} 
+                onChange={(e) => setLiving(Number(e.target.value))}
+                className="w-full pl-10 p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="0"
+              />
+            </div>
+            <p className="text-xs text-zinc-400">≈ {formatINR(living * currentRate.rate)}</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Course Duration (Years)</label>
+            <input 
+              type="number" 
+              value={duration} 
+              onChange={(e) => setDuration(Number(e.target.value))}
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+            />
+          </div>
+          <div className="pt-4 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+            <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Current Exchange Rate</p>
+            <p className="text-sm font-medium text-zinc-600">1 {currentRate.code} = ₹{currentRate.rate}</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-indigo-600 text-white rounded-3xl p-8 shadow-xl shadow-indigo-100">
+            <p className="text-indigo-100 text-xs font-bold uppercase mb-2 tracking-wider">Total Estimated Cost (With 10% Buffer)</p>
+            <div className="mb-6">
+              <p className="text-4xl font-bold">{formatINR(totalINR)}</p>
+              <p className="text-indigo-200 text-lg font-medium">({formatLocal(totalWithBufferLocal)})</p>
+              <p className="text-indigo-300 text-xs mt-2 italic">“This is the total estimated money you will need for your entire course, including a 10% safety buffer.”</p>
+            </div>
+            
+            <div className="h-px bg-indigo-500/50 mb-6" />
+            
+            <p className="text-indigo-100 text-xs font-bold uppercase mb-2 tracking-wider">Min. Financial Proof (1 Year)</p>
+            <div>
+              <p className="text-2xl font-bold">{formatINR(minProofINR)}</p>
+              <p className="text-indigo-200 font-medium">({formatLocal(minProofLocal)})</p>
+              <p className="text-indigo-300 text-xs mt-2 italic">“This is the amount you must show in your bank account to prove you can afford your studies.”</p>
+            </div>
+          </div>
+
+          {country === 'Germany' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 flex gap-4">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Shield className="text-amber-600 w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-amber-800 font-bold mb-1">Germany Blocked Account</p>
+                <p className="text-amber-700 text-sm leading-relaxed">
+                  You must deposit <strong>€11,208</strong> (≈ {formatINR(11208 * exchangeRates['Germany'].rate)}) into a blocked account before your visa interview.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <div className="bg-white border border-zinc-200 rounded-3xl p-6">
+            <h4 className="text-sm font-bold text-zinc-900 mb-4 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+              Pro Tip
+            </h4>
+            <p className="text-zinc-600 text-sm leading-relaxed">
+              Financial proof requirements vary by country. Most universities require you to show funds for at least the first year of tuition and living expenses.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ComparisonTool = () => {
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/countries').then(res => res.json()).then(setCountries);
+  }, []);
+
+  const toggleCountry = (name: string) => {
+    if (selected.includes(name)) {
+      setSelected(selected.filter(n => n !== name));
+    } else if (selected.length < 3) {
+      setSelected([...selected, name]);
+    }
+  };
+
+  const selectedData = countries.filter(c => selected.includes(c.name));
+
+  return (
+    <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 className="text-3xl font-bold text-zinc-900 mb-8">Compare Countries</h2>
+      
+      <div className="flex flex-wrap gap-3 mb-12">
+        {countries.map(c => (
+          <button
+            key={c.id}
+            onClick={() => toggleCountry(c.name)}
+            className={cn(
+              "px-6 py-3 rounded-xl text-sm font-bold transition-all border",
+              selected.includes(c.name)
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : "bg-white text-zinc-600 border-zinc-200 hover:border-indigo-600"
+            )}
+          >
+            {c.name}
+          </button>
+        ))}
+      </div>
+
+      {selected.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse bg-white rounded-3xl overflow-hidden shadow-sm border border-zinc-200">
+            <thead>
+              <tr className="bg-zinc-50">
+                <th className="p-6 text-left text-sm font-bold text-zinc-500 uppercase">Metric</th>
+                {selectedData.map(c => (
+                  <th key={c.id} className="p-6 text-left text-xl font-bold text-zinc-900">{c.name}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {[
+                { label: 'Avg Tuition', key: 'tuition', prefix: '$' },
+                { label: 'Living Cost', key: 'livingCost', prefix: '$' },
+                { label: 'Visa Difficulty', key: 'visaDifficulty' },
+                { label: 'Visa Time', key: 'visaTime' },
+                { label: 'Work Hours', key: 'workHours' },
+                { label: 'PR Chance', key: 'prChance' },
+              ].map((metric) => (
+                <tr key={metric.label}>
+                  <td className="p-6 text-sm font-bold text-zinc-500">{metric.label}</td>
+                  {selectedData.map(c => (
+                    <td key={c.id} className="p-6 text-zinc-900 font-medium">
+                      {(metric as any).prefix || ''} {(c.comparison_data as any)[metric.key]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-center py-20 bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
+          <p className="text-zinc-500 font-medium">Select up to 3 countries to start comparing.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Assistant = () => {
+  const [query, setQuery] = useState('');
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [countries, setCountries] = useState<Country[]>([]);
+
+  useEffect(() => {
+    fetch('/api/countries').then(res => res.json()).then(setCountries);
+  }, []);
+
+  const handleSend = async () => {
+    if (!query.trim()) return;
+    const userMsg = query;
+    setQuery('');
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setLoading(true);
+
+    const context = JSON.stringify(countries.map(c => ({
+      name: c.name,
+      exams: c.exams,
+      finance: c.financial_requirement,
+      visa: c.visa_steps
+    })));
+
+    const aiResponse = await askAssistant(userMsg, context);
+    setMessages(prev => [...prev, { role: 'ai', text: aiResponse || "Sorry, I couldn't process that." }]);
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed bottom-8 right-8 z-50">
+      <div className="relative">
+        <AnimatePresence>
+          {messages.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="absolute bottom-20 right-0 w-80 md:w-96 bg-white border border-zinc-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[500px]"
+            >
+              <div className="p-4 bg-indigo-600 text-white font-bold flex justify-between items-center">
+                <span>GlobalPath AI</span>
+                <button onClick={() => setMessages([])}><X className="w-4 h-4" /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-50">
+                {messages.map((m, i) => (
+                  <div key={i} className={cn(
+                    "p-3 rounded-2xl text-sm max-w-[85%]",
+                    m.role === 'user' ? "bg-indigo-600 text-white ml-auto" : "bg-white text-zinc-900 shadow-sm"
+                  )}>
+                    {m.text}
+                  </div>
+                ))}
+                {loading && <div className="text-zinc-400 text-xs animate-pulse">Assistant is thinking...</div>}
+              </div>
+              <div className="p-4 bg-white border-t border-zinc-100 flex gap-2">
+                <input 
+                  value={query} 
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Ask about visas, docs..."
+                  className="flex-1 text-sm outline-none"
+                />
+                <button onClick={handleSend} className="p-2 bg-indigo-600 text-white rounded-lg">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <button 
+          onClick={() => messages.length === 0 && setMessages([{ role: 'ai', text: 'Hi! I can help you with country requirements and visa steps. What would you like to know?' }])}
+          className="w-14 h-14 bg-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition-transform"
+        >
+          <MessageSquare className="w-6 h-6" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const AuthPage = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const body = isLogin ? { email, password } : { name, email, password };
+    
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      login(data.token, data.user);
+      navigate('/');
+    } else {
+      alert('Authentication failed');
+    }
+  };
+
+  return (
+    <div className="pt-32 pb-16 flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white border border-zinc-200 rounded-3xl p-8 shadow-sm">
+        <h2 className="text-3xl font-bold text-zinc-900 mb-2">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+        <p className="text-zinc-500 mb-8">{isLogin ? 'Sign in to track your progress' : 'Join GlobalPath to start planning'}</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {!isLogin && (
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-zinc-700">Full Name</label>
+              <input 
+                type="text" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)}
+                className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                required 
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Email Address</label>
+            <input 
+              type="email" 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+              required 
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Password</label>
+            <input 
+              type="password" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+              required 
+            />
+          </div>
+          <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all">
+            {isLogin ? 'Sign In' : 'Register'}
+          </button>
+        </form>
+        
+        <div className="mt-6 text-center">
+          <button onClick={() => setIsLogin(!isLogin)} className="text-sm text-indigo-600 font-bold hover:underline">
+            {isLogin ? "Don't have an account? Register" : "Already have an account? Login"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TimelinePlanner = () => {
+  const { progress, updateProgress } = useAuth();
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [selected, setSelected] = useState<string>('');
+  const [intake, setIntake] = useState('Fall');
+  const [year, setYear] = useState('2026');
+
+  useEffect(() => {
+    fetch('/api/countries').then(res => res.json()).then(setCountries);
+  }, []);
+
+  const country = countries.find(c => c.name === selected);
+
+  const toggleStep = (index: number) => {
+    if (!selected) return;
+    const currentTimeline = progress.timeline[selected] || [];
+    const newTimeline = currentTimeline.includes(index)
+      ? currentTimeline.filter(i => i !== index)
+      : [...currentTimeline, index];
+    
+    updateProgress({
+      timeline: { ...progress.timeline, [selected]: newTimeline }
+    });
+  };
+
+  return (
+    <div className="pt-24 pb-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 className="text-3xl font-bold text-zinc-900 mb-8">Timeline Planner</h2>
+      <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-zinc-700">Country</label>
+          <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full p-3 rounded-xl border border-zinc-200">
+            <option value="">Select Country</option>
+            {countries.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-zinc-700">Intake</label>
+          <select value={intake} onChange={(e) => setIntake(e.target.value)} className="w-full p-3 rounded-xl border border-zinc-200">
+            <option>Fall</option>
+            <option>Spring</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-zinc-700">Year</label>
+          <select value={year} onChange={(e) => setYear(e.target.value)} className="w-full p-3 rounded-xl border border-zinc-200">
+            <option>2026</option>
+            <option>2027</option>
+          </select>
+        </div>
+      </div>
+
+      {country ? (
+        <div className="space-y-8 relative pl-8 before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-200">
+          {country.timeline.map((item, i) => {
+            const isCompleted = (progress.timeline[selected] || []).includes(i);
+            return (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className={cn(
+                  "relative p-6 rounded-2xl border transition-all shadow-sm",
+                  isCompleted ? "bg-indigo-50 border-indigo-200" : "bg-white border-zinc-100"
+                )}
+              >
+                <div className="absolute -left-[41px] top-6 w-6 h-6 rounded-full bg-indigo-600 border-4 border-white shadow-sm flex items-center justify-center">
+                  <div className="w-1 h-1 bg-white rounded-full" />
+                </div>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className={cn("text-xs font-bold uppercase mb-1", isCompleted ? "text-indigo-400" : "text-indigo-600")}>Month {item.month}</p>
+                    <h4 className={cn("text-lg font-bold mb-2", isCompleted ? "text-indigo-900" : "text-zinc-900")}>{item.step}</h4>
+                    <p className={cn("text-sm leading-relaxed", isCompleted ? "text-indigo-700" : "text-zinc-600")}>{item.explanation}</p>
+                  </div>
+                  <button 
+                    onClick={() => toggleStep(i)}
+                    className={cn(
+                      "p-2 transition-colors",
+                      isCompleted ? "text-indigo-600" : "text-zinc-300 hover:text-indigo-600"
+                    )}
+                  >
+                    <CheckCircle2 className="w-6 h-6" />
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-20 bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
+          <p className="text-zinc-500 font-medium">Select a country to generate your roadmap.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AdminPanel = () => {
+  const { user, token } = useAuth();
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [editing, setEditing] = useState<Partial<Country> | null>(null);
+
+  useEffect(() => {
+    fetch('/api/countries').then(res => res.json()).then(setCountries);
+  }, []);
+
+  if (user?.role !== 'admin') return <div className="pt-32 text-center">Unauthorized</div>;
+
+  const handleSave = async () => {
+    if (!editing) return;
+    const res = await fetch('/api/admin/countries', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(editing)
+    });
+    if (res.ok) {
+      alert('Country updated successfully');
+      setEditing(null);
+      fetch('/api/countries').then(res => res.json()).then(setCountries);
+    }
+  };
+
+  return (
+    <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold text-zinc-900">Admin Control Panel</h2>
+        <button 
+          onClick={() => setEditing({ name: '', exams: [], documents: [], visa_steps: [], timeline: [], comparison_data: { tuition: 0, livingCost: 0, visaTime: '', workHours: '', prChance: '' } })}
+          className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Country</span>
+        </button>
+      </div>
+
+      <div className="grid gap-4">
+        {countries.map(c => (
+          <div key={c.id} className="bg-white p-6 rounded-2xl border border-zinc-200 flex justify-between items-center">
+            <div>
+              <h3 className="text-xl font-bold text-zinc-900">{c.name}</h3>
+              <p className="text-sm text-zinc-500">{c.exams.map(e => e.name).join(', ')}</p>
+            </div>
+            <div className="flex space-x-2">
+              <button onClick={() => setEditing(c)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                Edit
+              </button>
+              <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {editing && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold mb-6">Edit Country: {editing.name}</h3>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-zinc-500 uppercase">Country Name</label>
+                <input 
+                  value={editing.name} 
+                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                  className="w-full p-3 rounded-xl border border-zinc-200"
+                />
+              </div>
+              {/* More fields would go here in a full implementation */}
+              <p className="text-xs text-zinc-400 italic">Note: In this demo, only the name field is editable for brevity.</p>
+            </div>
+            <div className="flex justify-end space-x-4 mt-8">
+              <button onClick={() => setEditing(null)} className="px-6 py-3 text-zinc-600 font-bold">Cancel</button>
+              <button onClick={handleSave} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- Main App ---
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <div className="min-h-screen bg-[#FDFDFD] font-sans text-zinc-900">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/countries" element={<CountryList />} />
+          <Route path="/countries/:countryName" element={<CountryDetail />} />
+          <Route path="/eligibility" element={<EligibilityChecker />} />
+        <Route path="/applications" element={<ApplicationTracker />} />
+        <Route path="/compare" element={<ComparisonTool />} />
+          <Route path="/budget" element={<BudgetCalculator />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/timeline" element={<TimelinePlanner />} />
+          <Route path="/admin" element={<AdminPanel />} />
+        </Routes>
+        <Assistant />
+        
+        <footer className="border-t border-zinc-100 py-12 mt-20">
+          <div className="max-w-7xl mx-auto px-4 text-center">
+            <p className="text-zinc-400 text-sm">© 2026 GlobalPath. All rights reserved.</p>
+          </div>
+        </footer>
+      </div>
+    </AuthProvider>
+  );
+}
