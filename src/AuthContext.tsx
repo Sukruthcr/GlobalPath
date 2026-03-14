@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserProgress } from './types';
+import { auth, db } from './firebase';
+import { onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string, user: User) => void;
-  logout: () => void;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
   progress: UserProgress;
   updateProgress: (newProgress: Partial<UserProgress>) => Promise<void>;
   loading: boolean;
@@ -13,66 +16,115 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const defaultProgress: UserProgress = { checklist: {}, timeline: {}, calculations: [], applications: [] };
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [progress, setProgress] = useState<UserProgress>({ checklist: {}, timeline: {}, calculations: [] });
+  const [token, setToken] = useState<string | null>(null);
+  const [progress, setProgress] = useState<UserProgress>(defaultProgress);
   const [loading, setLoading] = useState(true);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
-      fetchProgress(token);
-    } else {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const t = await firebaseUser.getIdToken();
+        setToken(t);
+        
+        // Fetch or create user profile
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        let userData: User;
+        if (userSnap.exists()) {
+          userData = { id: firebaseUser.uid as any, ...userSnap.data() } as User;
+        } else {
+          userData = {
+            id: firebaseUser.uid as any,
+            name: firebaseUser.displayName || 'Student',
+            email: firebaseUser.email || '',
+            role: 'student'
+          };
+          await setDoc(userRef, {
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            createdAt: serverTimestamp()
+          });
+        }
+        setUser(userData);
+      } else {
+        setUser(null);
+        setToken(null);
+        setProgress(defaultProgress);
+      }
+      setIsAuthReady(true);
       setLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const fetchProgress = async (authToken: string) => {
-    try {
-      const res = await fetch('/api/user/progress', {
-        headers: { Authorization: `Bearer ${authToken}` }
+  useEffect(() => {
+    if (isAuthReady && user) {
+      const progressRef = doc(db, 'users', String(user.id), 'data', 'progress');
+      const unsubscribe = onSnapshot(progressRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setProgress(docSnap.data() as UserProgress);
+        } else {
+          // Initialize progress if it doesn't exist
+          setDoc(progressRef, {
+            ...defaultProgress,
+            updatedAt: serverTimestamp()
+          });
+          setProgress(defaultProgress);
+        }
+      }, (error) => {
+        console.error("Firestore Error: ", JSON.stringify({
+          error: error.message,
+          operationType: 'get',
+          path: progressRef.path
+        }));
       });
-      if (res.ok) {
-        const data = await res.json();
-        setProgress(data);
-      }
-    } catch (e) {
-      console.error("Failed to fetch progress", e);
-    } finally {
-      setLoading(false);
+
+      return () => unsubscribe();
+    }
+  }, [isAuthReady, user]);
+
+  const login = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Login failed", error);
     }
   };
 
-  const login = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    fetchProgress(newToken);
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    setProgress({ checklist: {}, timeline: {}, calculations: [] });
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
   };
 
   const updateProgress = async (newProgress: Partial<UserProgress>) => {
+    if (!user) return;
     const updated = { ...progress, ...newProgress };
     setProgress(updated);
-    if (token) {
-      await fetch('/api/user/progress', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(updated)
-      });
+    
+    try {
+      const progressRef = doc(db, 'users', String(user.id), 'data', 'progress');
+      await setDoc(progressRef, {
+        ...updated,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    } catch (error: any) {
+      console.error("Firestore Error: ", JSON.stringify({
+        error: error.message,
+        operationType: 'update',
+        path: `users/${user.id}/data/progress`
+      }));
     }
   };
 

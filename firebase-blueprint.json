@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The user's full name"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["student", "admin"],
+          "description": "The user's role"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the profile was created"
+        }
+      },
+      "required": ["name", "email", "role", "createdAt"]
+    },
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "User's progress on checklists, timelines, and applications",
+      "type": "object",
+      "properties": {
+        "checklist": {
+          "type": "object",
+          "description": "Map of country names to array of completed document names"
+        },
+        "timeline": {
+          "type": "object",
+          "description": "Map of country names to array of completed month indices"
+        },
+        "calculations": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Saved budget calculations"
+        },
+        "applications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "university": { "type": "string" },
+              "course": { "type": "string" },
+              "deadline": { "type": "string" },
+              "status": { "type": "string" }
+            }
+          },
+          "description": "User's university applications"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["checklist", "timeline", "calculations", "applications", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile documents"
+    },
+    "/users/{userId}/data/progress": {
+      "schema": { "$ref": "#/entities/UserProgress" },
+      "description": "User's progress data"
+    }
+  }
+}

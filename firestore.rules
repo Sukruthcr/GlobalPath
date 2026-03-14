@@ -1,0 +1,103 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - name: string (required, length < 100)
+    //   - email: string (required, valid email)
+    //   - role: string (required, 'student' or 'admin')
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // Collection: users/{userId}/data
+    // Document ID: progress
+    // Fields:
+    //   - checklist: map (required)
+    //   - timeline: map (required)
+    //   - calculations: list (required)
+    //   - applications: list (required)
+    //   - updatedAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "sukruthcr8269@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+    
+    function isValidUser(data) {
+      return data.keys().hasOnly(['name', 'email', 'role', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['student', 'admin'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidProgress(data) {
+      return data.keys().hasOnly(['checklist', 'timeline', 'calculations', 'applications', 'updatedAt']) &&
+             data.checklist is map &&
+             data.timeline is map &&
+             data.calculations is list &&
+             data.applications is list &&
+             data.updatedAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      
+      allow create: if isAuthenticated() && 
+                    isOwner(userId) && 
+                    isValidUser(request.resource.data) && 
+                    ((request.resource.data.role == 'student') || isAdmin());
+                    
+      allow update: if isAuthenticated() && 
+                    isOwner(userId) && 
+                    isValidUser(request.resource.data) && 
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    ((request.resource.data.role == resource.data.role) || isAdmin());
+                    
+      allow delete: if isAdmin();
+
+      match /data/progress {
+        allow read: if isOwner(userId) || isAdmin();
+        
+        allow create: if isAuthenticated() && 
+                      isOwner(userId) && 
+                      isValidProgress(request.resource.data);
+                      
+        allow update: if isAuthenticated() && 
+                      isOwner(userId) && 
+                      isValidProgress(request.resource.data);
+                      
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+  }
+}

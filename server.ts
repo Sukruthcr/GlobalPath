@@ -1,30 +1,34 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const firebaseConfigPath = path.join(__dirname, 'firebase-applet-config.json');
+let firestoreDatabaseId = '(default)';
+if (fs.existsSync(firebaseConfigPath)) {
+  const config = JSON.parse(fs.readFileSync(firebaseConfigPath, 'utf-8'));
+  if (config.firestoreDatabaseId) {
+    firestoreDatabaseId = config.firestoreDatabaseId;
+  }
+}
+
+// Initialize Firebase Admin
+if (!getApps().length) {
+  initializeApp();
+}
 
 const db = new Database("globalpath_v7.db");
 
 // Initialize Database
 db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT DEFAULT 'student',
-    checklist_progress TEXT DEFAULT '{}',
-    timeline_progress TEXT DEFAULT '{}',
-    saved_calculations TEXT DEFAULT '[]',
-    applications TEXT DEFAULT '[]'
-  );
-
   CREATE TABLE IF NOT EXISTS countries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
@@ -1044,11 +1048,17 @@ async function startServer() {
   app.use(express.json());
 
   // Auth Middleware
-  const authenticate = (req: any, res: any, next: any) => {
+  const authenticate = async (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(401).json({ error: "Unauthorized" });
     try {
-      req.user = jwt.verify(token, JWT_SECRET);
+      const decodedToken = await getAuth().verifyIdToken(token);
+      
+      // Fetch user role from Firestore
+      const userDoc = await getFirestore(firestoreDatabaseId).collection('users').doc(decodedToken.uid).get();
+      const role = userDoc.exists ? userDoc.data()?.role : 'student';
+      
+      req.user = { id: decodedToken.uid, email: decodedToken.email, role };
       next();
     } catch (e) {
       res.status(401).json({ error: "Invalid token" });
@@ -1056,28 +1066,6 @@ async function startServer() {
   };
 
   // API Routes
-  app.post("/api/auth/register", async (req, res) => {
-    const { name, email, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    try {
-      const result = db.prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)").run(name, email, hashedPassword);
-      const token = jwt.sign({ id: result.lastInsertRowid, email, role: 'student' }, JWT_SECRET);
-      res.json({ token, user: { id: result.lastInsertRowid, name, email, role: 'student' } });
-    } catch (e) {
-      res.status(400).json({ error: "Email already exists" });
-    }
-  });
-
-  app.post("/api/auth/login", async (req, res) => {
-    const { email, password } = req.body;
-    const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-    const token = jwt.sign({ id: user.id, email, role: user.role }, JWT_SECRET);
-    res.json({ token, user: { id: user.id, name: user.name, email, role: user.role } });
-  });
-
   app.get("/api/countries", (req, res) => {
     const countries = db.prepare("SELECT * FROM countries").all();
     res.json(countries.map((c: any) => ({
@@ -1094,25 +1082,6 @@ async function startServer() {
       part_time_info: JSON.parse(c.part_time_info || '{}'),
       comparison_data: JSON.parse(c.comparison_data || '{}')
     })));
-  });
-
-  app.get("/api/user/progress", authenticate, (req: any, res) => {
-    const user = db.prepare("SELECT checklist_progress, timeline_progress, saved_calculations, applications FROM users WHERE id = ?").get(req.user.id) as any;
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({
-      checklist: JSON.parse(user.checklist_progress || '{}'),
-      timeline: JSON.parse(user.timeline_progress || '{}'),
-      calculations: JSON.parse(user.saved_calculations || '[]'),
-      applications: JSON.parse(user.applications || '[]')
-    });
-  });
-
-  app.post("/api/user/progress", authenticate, (req: any, res) => {
-    const { checklist, timeline, calculations, applications } = req.body;
-    const result = db.prepare("UPDATE users SET checklist_progress = ?, timeline_progress = ?, saved_calculations = ?, applications = ? WHERE id = ?")
-      .run(JSON.stringify(checklist), JSON.stringify(timeline), JSON.stringify(calculations), JSON.stringify(applications), req.user.id);
-    if (result.changes === 0) return res.status(404).json({ error: "User not found" });
-    res.json({ success: true });
   });
 
   // Admin Routes
