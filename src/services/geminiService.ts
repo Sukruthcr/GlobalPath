@@ -17,3 +17,20 @@ export async function askAssistant(prompt: string, context: string) {
     return "I'm sorry, I'm having trouble connecting to my brain right now. Please try again later.";
   }
 }
+
+export async function generateSOP(degree: string, university: string, goals: string) {
+  try {
+    const prompt = `Write a professional Statement of Purpose (SOP) draft for a student applying for a ${degree} at ${university}. Their main career goals are: ${goals}. The tone should be academic, ambitious, and authentic. Keep it around 300-400 words. Provide only the SOP text without any conversational filler.`;
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        systemInstruction: "You are an expert university admissions counselor helping a student write an SOP. Provide a high-quality draft that they can edit.",
+      }
+    });
+    return response.text;
+  } catch (error) {
+    console.error("AI SOP Error:", error);
+    return "Failed to generate SOP. Please try again later.";
+  }
+}

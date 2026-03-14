@@ -1,18 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Globe, Calculator, Calendar, BarChart3, CheckCircle2, 
   User as UserIcon, LogOut, Menu, X, ChevronRight, 
-  Download, Plus, Trash2, MessageSquare, Shield
+  Download, Plus, Trash2, MessageSquare, Shield, Linkedin,
+  FileText, Sparkles
 } from 'lucide-react';
 import { useAuth, AuthProvider } from './AuthContext';
 import { Country, RequirementDetail, cn } from './types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { askAssistant } from './services/geminiService';
+import { askAssistant, generateSOP } from './services/geminiService';
 
 // --- Components ---
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
+};
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -22,6 +42,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Countries', path: '/countries', icon: Globe },
     { name: 'Eligibility', path: '/eligibility', icon: CheckCircle2 },
+    { name: 'SOP Assistant', path: '/sop-assistant', icon: Sparkles },
     { name: 'Applications', path: '/applications', icon: Calendar },
     { name: 'Compare', path: '/compare', icon: BarChart3 },
     { name: 'Budget', path: '/budget', icon: Calculator },
@@ -131,37 +152,115 @@ const LandingPage = () => {
     <div className="pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Hero */}
-        <div className="text-center space-y-8 py-12">
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-bold tracking-tight text-zinc-900"
-          >
-            Study Abroad <br />
-            <span className="text-indigo-600">Made Super Simple.</span>
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-xl text-zinc-600 max-w-2xl mx-auto"
-          >
-            Confused about where to start? We guide you step-by-step through exams, 
-            documents, and costs in plain English. No complicated jargon, just clear paths.
-          </motion.p>
+        <div className="grid lg:grid-cols-2 gap-12 items-center py-12">
+          <div className="text-center lg:text-left space-y-8">
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-5xl md:text-7xl font-bold tracking-tight text-zinc-900"
+            >
+              Study Abroad <br />
+              <span className="text-indigo-600">Made Super Simple.</span>
+            </motion.h1>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-xl text-zinc-600 max-w-2xl mx-auto lg:mx-0"
+            >
+              From eligibility to visa approval, GlobalPath organizes every requirement, cost, and deadline into one structured system.
+            </motion.p>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex flex-col items-center lg:items-start gap-4"
+            >
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 w-full">
+                <Link to="/countries" className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                  Start Your Journey
+                </Link>
+                <Link to="/eligibility" className="w-full sm:w-auto px-8 py-4 bg-white text-zinc-900 border border-zinc-200 rounded-xl font-semibold hover:bg-zinc-50 transition-all">
+                  Check Eligibility
+                </Link>
+              </div>
+              <p className="text-xs text-zinc-400 font-medium tracking-wide uppercase">
+                No agents. No hidden fees. Structured clarity.
+              </p>
+            </motion.div>
+          </div>
+          
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative hidden lg:block"
           >
-            <Link to="/countries" className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
-              Start Your Journey
-            </Link>
-            <Link to="/eligibility" className="w-full sm:w-auto px-8 py-4 bg-white text-zinc-900 border border-zinc-200 rounded-xl font-semibold hover:bg-zinc-50 transition-all">
-              Check Eligibility
-            </Link>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4 mt-8">
+                <img 
+                  src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=600" 
+                  alt="Students talking" 
+                  className="rounded-2xl shadow-lg object-cover h-48 w-full"
+                  referrerPolicy="no-referrer"
+                />
+                <img 
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=600" 
+                  alt="Group study" 
+                  className="rounded-2xl shadow-lg object-cover h-64 w-full"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="space-y-4">
+                <img 
+                  src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80&w=600" 
+                  alt="University campus" 
+                  className="rounded-2xl shadow-lg object-cover h-64 w-full"
+                  referrerPolicy="no-referrer"
+                />
+                <img 
+                  src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=600" 
+                  alt="Student smiling" 
+                  className="rounded-2xl shadow-lg object-cover h-48 w-full"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </div>
           </motion.div>
+        </div>
+
+        {/* Credibility Layer */}
+        <div className="py-12 border-y border-zinc-100 bg-zinc-50/50">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div className="space-y-2">
+              <div className="mx-auto w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-zinc-100">
+                <Shield className="w-6 h-6 text-emerald-600" />
+              </div>
+              <p className="font-bold text-zinc-900 text-sm">Official Guidelines</p>
+              <p className="text-xs text-zinc-500">Built using embassy data</p>
+            </div>
+            <div className="space-y-2">
+              <div className="mx-auto w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-zinc-100">
+                <Calendar className="w-6 h-6 text-indigo-600" />
+              </div>
+              <p className="font-bold text-zinc-900 text-sm">Updated for 2026</p>
+              <p className="text-xs text-zinc-500">Latest intake rules</p>
+            </div>
+            <div className="space-y-2">
+              <div className="mx-auto w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-zinc-100">
+                <Globe className="w-6 h-6 text-blue-600" />
+              </div>
+              <p className="font-bold text-zinc-900 text-sm">India-Focused</p>
+              <p className="text-xs text-zinc-500">Documentation clarity</p>
+            </div>
+            <div className="space-y-2">
+              <div className="mx-auto w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-zinc-100">
+                <CheckCircle2 className="w-6 h-6 text-violet-600" />
+              </div>
+              <p className="font-bold text-zinc-900 text-sm">Structured Compliance</p>
+              <p className="text-xs text-zinc-500">Country-specific logic</p>
+            </div>
+          </div>
         </div>
 
         {/* Features */}
@@ -195,6 +294,7 @@ const EligibilityChecker = () => {
     backlogs: 0,
     ielts: 0,
     experience: 0,
+    internships: 0,
     budget: 0
   });
   const [results, setResults] = useState<string[]>([]);
@@ -209,7 +309,7 @@ const EligibilityChecker = () => {
     
     // Germany Rules
     if (scores.percentage >= 75 && scores.backlogs === 0 && scores.ielts >= 6.5) {
-      res.push("✅ You are eligible for Germany Public Universities (Tuition Free!)");
+      res.push("✅ Your profile is strong for public German universities (Tuition Free!).");
     } else if (scores.backlogs > 5) {
       res.push("🔴 High Risk for Germany: Public universities rarely accept more than 5 backlogs.");
     } else if (scores.percentage >= 65 && scores.ielts >= 6.0) {
@@ -235,8 +335,11 @@ const EligibilityChecker = () => {
       res.push("✅ Australia: You meet the requirements for most Group of Eight (Go8) universities.");
     }
 
+    // Internship & Experience Rules
     if (scores.experience >= 2) {
-      res.push("🌟 Bonus: Your work experience strengthens applications for MBA and specialized Masters.");
+      res.push("🌟 Bonus: Your 2+ years of work experience significantly strengthens applications for MBA and specialized Masters.");
+    } else if (scores.internships >= 2) {
+      res.push("🌟 Bonus: Having 2+ internships shows practical exposure, which is highly valued by German and US universities.");
     }
 
     if (res.length === 0) {
@@ -249,14 +352,14 @@ const EligibilityChecker = () => {
   return (
     <div className="pt-24 pb-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold text-zinc-900 mb-4">Eligibility Checker</h2>
+        <h2 className="text-4xl font-bold text-zinc-900 mb-4">Profile Strength Analyzer</h2>
         <p className="text-zinc-600">Enter your profile details to see which countries fit you best.</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-12">
         <div className="bg-white border border-zinc-200 rounded-3xl p-8 space-y-6 shadow-sm">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-zinc-700">Undergrad Percentage (%)</label>
+            <label className="text-sm font-bold text-zinc-700">Undergrad Percentage (%) / GPA</label>
             <input 
               type="number" 
               value={scores.percentage} 
@@ -297,6 +400,16 @@ const EligibilityChecker = () => {
             />
           </div>
           <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Number of Internships</label>
+            <input 
+              type="number" 
+              value={scores.internships} 
+              onChange={(e) => setScores({...scores, internships: Number(e.target.value)})}
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
             <label className="text-sm font-bold text-zinc-700">Total Budget (in USD)</label>
             <input 
               type="number" 
@@ -310,7 +423,7 @@ const EligibilityChecker = () => {
             onClick={checkEligibility}
             className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
           >
-            Check My Eligibility
+            Analyze My Profile
           </button>
         </div>
 
@@ -1443,6 +1556,9 @@ const AuthPage = () => {
   const [name, setName] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const from = location.state?.from?.pathname || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1458,60 +1574,212 @@ const AuthPage = () => {
     if (res.ok) {
       const data = await res.json();
       login(data.token, data.user);
-      navigate('/');
+      navigate(from, { replace: true });
     } else {
       alert('Authentication failed');
     }
   };
 
   return (
-    <div className="pt-32 pb-16 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white border border-zinc-200 rounded-3xl p-8 shadow-sm">
-        <h2 className="text-3xl font-bold text-zinc-900 mb-2">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
-        <p className="text-zinc-500 mb-8">{isLogin ? 'Sign in to track your progress' : 'Join GlobalPath to start planning'}</p>
+    <div className="min-h-screen flex">
+      {/* Left Side - Info/Background */}
+      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=2000" 
+            alt="University Campus" 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-indigo-900/80 mix-blend-multiply"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-zinc-900/20 to-transparent"></div>
+        </div>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+        <div className="relative z-10 p-12 text-white max-w-2xl">
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8 border border-white/20">
+            <Globe className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-5xl font-bold mb-6 leading-tight">
+            Your journey to a global education starts here.
+          </h1>
+          <p className="text-xl text-indigo-100 mb-12 leading-relaxed">
+            Join thousands of students who have successfully navigated their study abroad journey without paying hefty agent fees.
+          </p>
+          
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Agent-Free Process</h3>
+                <p className="text-indigo-200 text-sm">Transparent, step-by-step guidance.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
+                <Sparkles className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">AI SOP Assistant</h3>
+                <p className="text-indigo-200 text-sm">Draft winning statements in seconds.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
+                <Calculator className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Accurate Budgets</h3>
+                <p className="text-indigo-200 text-sm">Know exactly how much you need.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative">
+        {/* Mobile Background (visible only on small screens) */}
+        <div className="absolute inset-0 z-0 lg:hidden">
+          <img 
+            src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=2000" 
+            alt="University Campus" 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"></div>
+        </div>
+
+        <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl relative z-10">
+          <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
+              <Globe className="text-white w-6 h-6" />
+            </div>
+            <span className="text-2xl font-bold text-zinc-900">GlobalPath</span>
+          </div>
+
+          <h2 className="text-3xl font-bold text-zinc-900 mb-2">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+          <p className="text-zinc-500 mb-8">{isLogin ? 'Sign in to track your progress' : 'Join GlobalPath to start planning'}</p>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700">Full Name</label>
+                <input 
+                  type="text" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                  required 
+                />
+              </div>
+            )}
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700">Full Name</label>
+              <label className="text-sm font-bold text-zinc-700">Email Address</label>
               <input 
-                type="text" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)}
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
                 required 
               />
             </div>
-          )}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-zinc-700">Password</label>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                required 
+              />
+            </div>
+            <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+              {isLogin ? 'Sign In' : 'Register'}
+            </button>
+          </form>
+          
+          <div className="mt-6 text-center">
+            <button onClick={() => setIsLogin(!isLogin)} className="text-sm text-indigo-600 font-bold hover:underline">
+              {isLogin ? "Don't have an account? Register" : "Already have an account? Login"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SopAssistant = () => {
+  const [degree, setDegree] = useState('');
+  const [university, setUniversity] = useState('');
+  const [goals, setGoals] = useState('');
+  const [draft, setDraft] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    const result = await generateSOP(degree, university, goals);
+    setDraft(result || '');
+    setLoading(false);
+  };
+
+  return (
+    <div className="pt-24 pb-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-bold text-zinc-900 mb-4">AI SOP Assistant</h2>
+        <p className="text-zinc-600">Generate a strong first draft for your Statement of Purpose.</p>
+      </div>
+      <div className="grid lg:grid-cols-2 gap-8">
+        <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm space-y-6">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-zinc-700">Email Address</label>
+            <label className="text-sm font-bold text-zinc-700">Degree / Program</label>
             <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
-              required 
+              value={degree} 
+              onChange={e => setDegree(e.target.value)} 
+              placeholder="e.g. Master's in Computer Science" 
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-bold text-zinc-700">Password</label>
+            <label className="text-sm font-bold text-zinc-700">Target University</label>
             <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
-              required 
+              value={university} 
+              onChange={e => setUniversity(e.target.value)} 
+              placeholder="e.g. Technical University of Munich" 
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
             />
           </div>
-          <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all">
-            {isLogin ? 'Sign In' : 'Register'}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Career Goals & Background</label>
+            <textarea 
+              value={goals} 
+              onChange={e => setGoals(e.target.value)} 
+              placeholder="e.g. I want to build AI systems for healthcare. I have 2 years of experience as a software engineer..." 
+              className="w-full p-3 rounded-xl border border-zinc-200 h-32 resize-none focus:ring-2 focus:ring-indigo-500 outline-none" 
+            />
+          </div>
+          <button 
+            onClick={handleGenerate} 
+            disabled={loading || !degree || !university || !goals} 
+            className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-indigo-100"
+          >
+            {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Sparkles className="w-5 h-5" />}
+            {loading ? 'Generating Draft...' : 'Generate SOP Draft'}
           </button>
-        </form>
-        
-        <div className="mt-6 text-center">
-          <button onClick={() => setIsLogin(!isLogin)} className="text-sm text-indigo-600 font-bold hover:underline">
-            {isLogin ? "Don't have an account? Register" : "Already have an account? Login"}
-          </button>
+        </div>
+        <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm flex flex-col h-full min-h-[500px]">
+          <h3 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-indigo-600" /> 
+            Your SOP Draft
+          </h3>
+          <textarea 
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            placeholder="Your generated SOP will appear here. You can edit it directly."
+            className="w-full flex-1 p-4 rounded-xl border border-zinc-200 bg-zinc-50 resize-none focus:ring-2 focus:ring-indigo-500 outline-none leading-relaxed"
+          />
         </div>
       </div>
     </div>
@@ -1713,21 +1981,43 @@ export default function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/countries" element={<CountryList />} />
-          <Route path="/countries/:countryName" element={<CountryDetail />} />
-          <Route path="/eligibility" element={<EligibilityChecker />} />
-        <Route path="/applications" element={<ApplicationTracker />} />
-        <Route path="/compare" element={<ComparisonTool />} />
-          <Route path="/budget" element={<BudgetCalculator />} />
           <Route path="/login" element={<AuthPage />} />
-          <Route path="/timeline" element={<TimelinePlanner />} />
-          <Route path="/admin" element={<AdminPanel />} />
+          
+          <Route path="/countries" element={<ProtectedRoute><CountryList /></ProtectedRoute>} />
+          <Route path="/countries/:countryName" element={<ProtectedRoute><CountryDetail /></ProtectedRoute>} />
+          <Route path="/eligibility" element={<ProtectedRoute><EligibilityChecker /></ProtectedRoute>} />
+          <Route path="/sop-assistant" element={<ProtectedRoute><SopAssistant /></ProtectedRoute>} />
+          <Route path="/applications" element={<ProtectedRoute><ApplicationTracker /></ProtectedRoute>} />
+          <Route path="/compare" element={<ProtectedRoute><ComparisonTool /></ProtectedRoute>} />
+          <Route path="/budget" element={<ProtectedRoute><BudgetCalculator /></ProtectedRoute>} />
+          <Route path="/timeline" element={<ProtectedRoute><TimelinePlanner /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
         </Routes>
         <Assistant />
         
-        <footer className="border-t border-zinc-100 py-12 mt-20">
-          <div className="max-w-7xl mx-auto px-4 text-center">
-            <p className="text-zinc-400 text-sm">© 2026 GlobalPath. All rights reserved.</p>
+        <footer className="border-t border-zinc-100 py-12 mt-20 bg-zinc-50">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+              <p className="text-zinc-400 text-sm">© 2026 GlobalPath. All rights reserved.</p>
+              <div className="flex items-center gap-4">
+                <a 
+                  href="https://www.linkedin.com/in/sukruth-cr-7061a0257/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-zinc-500 hover:text-indigo-600 transition-colors text-sm font-medium"
+                >
+                  <Linkedin className="w-4 h-4" />
+                  <span>Connect with Sukruth CR</span>
+                </a>
+              </div>
+            </div>
+            
+            <div className="pt-8 border-t border-zinc-200 text-center md:text-left">
+              <p className="text-xs text-zinc-400 leading-relaxed max-w-3xl">
+                <strong>Disclaimer:</strong> GlobalPath provides structured documentation guidance based on publicly available visa requirements. 
+                Final decisions are made by respective immigration authorities. We are a guidance platform, not a legal immigration firm.
+              </p>
+            </div>
           </div>
         </footer>
       </div>
