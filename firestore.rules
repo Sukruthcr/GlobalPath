@@ -69,6 +69,11 @@ service cloud.firestore {
     // Rules
     // ===============================================================
 
+    match /countries/{countryId} {
+      allow read: if true; // Publicly readable
+      allow create, update, delete: if isAdmin(); // Only admins can modify
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       

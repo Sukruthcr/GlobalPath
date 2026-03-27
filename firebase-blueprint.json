@@ -1,5 +1,28 @@
 {
   "entities": {
+    "Country": {
+      "title": "Country",
+      "description": "Country data including requirements, costs, and timelines",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "exams": { "type": "string" },
+        "documents": { "type": "string" },
+        "visa_steps": { "type": "string" },
+        "financial_requirement": { "type": "string" },
+        "work_rights": { "type": "string" },
+        "pr_possibility": { "type": "string" },
+        "timeline": { "type": "string" },
+        "living_costs": { "type": "string" },
+        "city_costs": { "type": "string" },
+        "scholarships": { "type": "string" },
+        "post_arrival_guide": { "type": "string" },
+        "visa_prep": { "type": "string" },
+        "part_time_info": { "type": "string" },
+        "comparison_data": { "type": "string" }
+      },
+      "required": ["name"]
+    },
     "UserProfile": {
       "title": "UserProfile",
       "description": "User profile data",
@@ -69,6 +92,10 @@
     }
   },
   "firestore": {
+    "/countries/{countryId}": {
+      "schema": { "$ref": "#/entities/Country" },
+      "description": "Country data documents"
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "User profile documents"

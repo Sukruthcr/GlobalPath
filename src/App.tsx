@@ -12,6 +12,7 @@ import { Country, RequirementDetail, cn } from './types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { askAssistant, generateSOP } from './services/geminiService';
+import { fetchCountries } from './services/countryService';
 
 // --- Components ---
 
@@ -301,7 +302,7 @@ const EligibilityChecker = () => {
   const [countries, setCountries] = useState<Country[]>([]);
 
   useEffect(() => {
-    fetch('/api/countries').then(res => res.json()).then(setCountries);
+    fetchCountries().then(setCountries);
   }, []);
 
   const checkEligibility = () => {
@@ -613,8 +614,7 @@ const CountryList = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/countries')
-      .then(res => res.json())
+    fetchCountries()
       .then(data => {
         setCountries(data);
         setLoading(false);
@@ -670,8 +670,7 @@ const CountryDetail = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/countries')
-      .then(res => res.json())
+    fetchCountries()
       .then(data => {
         const found = data.find((c: Country) => 
           c.name.toLowerCase().replace(/\s+/g, '-') === slug?.toLowerCase() ||
@@ -1228,7 +1227,7 @@ const BudgetCalculator = () => {
   const [countries, setCountries] = useState<Country[]>([]);
 
   useEffect(() => {
-    fetch('/api/countries').then(res => res.json()).then(setCountries);
+    fetchCountries().then(setCountries);
   }, []);
 
   useEffect(() => {
@@ -1243,13 +1242,13 @@ const BudgetCalculator = () => {
   }, [country, countries]);
 
   const exchangeRates: Record<string, { rate: number, symbol: string, code: string }> = {
-    'United States': { rate: 83.5, symbol: '$', code: 'USD' },
-    'Germany': { rate: 90.2, symbol: '€', code: 'EUR' },
-    'Canada': { rate: 61.5, symbol: 'C$', code: 'CAD' },
-    'Australia': { rate: 54.8, symbol: 'A$', code: 'AUD' },
-    'United Kingdom': { rate: 105.8, symbol: '£', code: 'GBP' },
-    'New Zealand': { rate: 50.8, symbol: 'NZ$', code: 'NZD' },
-    'Other': { rate: 83.5, symbol: '$', code: 'USD' }
+    'United States': { rate: 94.76, symbol: '$', code: 'USD' },
+    'Germany': { rate: 109.20, symbol: '€', code: 'EUR' },
+    'Canada': { rate: 68.36, symbol: 'C$', code: 'CAD' },
+    'Australia': { rate: 64.90, symbol: 'A$', code: 'AUD' },
+    'United Kingdom': { rate: 125.87, symbol: '£', code: 'GBP' },
+    'New Zealand': { rate: 54.54, symbol: 'NZ$', code: 'NZD' },
+    'Other': { rate: 94.76, symbol: '$', code: 'USD' }
   };
 
   const currentRate = exchangeRates[country] || exchangeRates['Other'];
@@ -1394,7 +1393,7 @@ const ComparisonTool = () => {
   const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch('/api/countries').then(res => res.json()).then(setCountries);
+    fetchCountries().then(setCountries);
   }, []);
 
   const toggleCountry = (name: string) => {
@@ -1476,7 +1475,7 @@ const Assistant = () => {
   const [countries, setCountries] = useState<Country[]>([]);
 
   useEffect(() => {
-    fetch('/api/countries').then(res => res.json()).then(setCountries);
+    fetchCountries().then(setCountries);
   }, []);
 
   const handleSend = async () => {
@@ -1771,7 +1770,7 @@ const TimelinePlanner = () => {
   const [year, setYear] = useState('2026');
 
   useEffect(() => {
-    fetch('/api/countries').then(res => res.json()).then(setCountries);
+    fetchCountries().then(setCountries);
   }, []);
 
   const country = countries.find(c => c.name === selected);
@@ -1868,25 +1867,28 @@ const AdminPanel = () => {
   const [editing, setEditing] = useState<Partial<Country> | null>(null);
 
   useEffect(() => {
-    fetch('/api/countries').then(res => res.json()).then(setCountries);
+    fetchCountries().then(setCountries);
   }, []);
 
   if (user?.role !== 'admin') return <div className="pt-32 text-center">Unauthorized</div>;
 
   const handleSave = async () => {
-    if (!editing) return;
-    const res = await fetch('/api/admin/countries', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(editing)
-    });
-    if (res.ok) {
+    if (!editing || !editing.name) return;
+    try {
+      const { doc, setDoc } = await import('firebase/firestore');
+      const { db } = await import('./firebase');
+      
+      const docId = editing.name.toLowerCase().replace(/\s+/g, '-');
+      const docRef = doc(db, 'countries', docId);
+      
+      await setDoc(docRef, editing, { merge: true });
+      
       alert('Country updated successfully');
       setEditing(null);
-      fetch('/api/countries').then(res => res.json()).then(setCountries);
+      fetchCountries().then(setCountries);
+    } catch (error) {
+      console.error('Error saving country:', error);
+      alert('Failed to save country');
     }
   };
 
