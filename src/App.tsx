@@ -13,8 +13,60 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { askAssistant, generateSOP } from './services/geminiService';
 import { fetchCountries } from './services/countryService';
+import { doc, setDoc, onSnapshot, collection, deleteDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 // --- Components ---
+
+const LiveUsersCounter = () => {
+  const [count, setCount] = useState(1);
+
+  useEffect(() => {
+    const sessionId = crypto.randomUUID();
+    const presenceRef = doc(db, 'presence', sessionId);
+
+    const updatePresence = () => {
+      setDoc(presenceRef, { lastActive: Date.now() }).catch(console.error);
+    };
+
+    updatePresence();
+    const intervalId = setInterval(updatePresence, 30000);
+
+    const handleUnload = () => {
+      deleteDoc(presenceRef).catch(console.error);
+    };
+    window.addEventListener('beforeunload', handleUnload);
+
+    const unsubscribe = onSnapshot(collection(db, 'presence'), (snapshot) => {
+      const now = Date.now();
+      let activeCount = 0;
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.lastActive && now - data.lastActive < 60000) {
+          activeCount++;
+        } else if (data.lastActive && now - data.lastActive >= 60000) {
+          // Cleanup stale sessions
+          deleteDoc(docSnap.ref).catch(console.error);
+        }
+      });
+      setCount(Math.max(1, activeCount));
+    });
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('beforeunload', handleUnload);
+      unsubscribe();
+      deleteDoc(presenceRef).catch(console.error);
+    };
+  }, []);
+
+  return (
+    <div className="hidden sm:flex items-center space-x-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium border border-green-200 ml-4">
+      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+      <span>{count} {count === 1 ? 'person' : 'people'} viewing</span>
+    </div>
+  );
+};
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -54,14 +106,17 @@ const Navbar = () => {
     <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-bottom border-zinc-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Globe className="text-white w-5 h-5" />
-            </div>
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
-              GlobalPath
-            </span>
-          </Link>
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <Globe className="text-white w-5 h-5" />
+              </div>
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
+                GlobalPath
+              </span>
+            </Link>
+            <LiveUsersCounter />
+          </div>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-8">

@@ -74,6 +74,13 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin(); // Only admins can modify
     }
 
+    match /presence/{sessionId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['lastActive']) &&
+                            request.resource.data.lastActive is number;
+      allow delete: if true;
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       
