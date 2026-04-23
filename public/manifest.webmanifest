@@ -1,4 +1,5 @@
 {
+  "id": "/?source=pwa",
   "name": "GlobalPath",
   "short_name": "GlobalPath",
   "description": "Study Abroad Made Super Simple for Indian Students",
@@ -6,16 +7,35 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#5B50E8",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "https://api.dicebear.com/7.x/shapes/png?seed=globalpath&backgroundColor=5b50e8",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "https://api.dicebear.com/7.x/shapes/png?seed=globalpath&backgroundColor=5b50e8",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1080&h=1920",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "GlobalPath App Mobile View"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1920&h=1080",
+      "sizes": "1920x1080",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "GlobalPath Desktop View"
     }
   ]
 }
