@@ -94,8 +94,9 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Countries', path: '/countries', icon: Globe },
+    { name: 'AI Matcher', path: '/matcher', icon: Sparkles },
     { name: 'Eligibility', path: '/eligibility', icon: CheckCircle2 },
-    { name: 'SOP Assistant', path: '/sop-assistant', icon: Sparkles },
+    { name: 'SOP Assistant', path: '/sop-assistant', icon: FileText },
     { name: 'Applications', path: '/applications', icon: Calendar },
     { name: 'Compare', path: '/compare', icon: BarChart3 },
     { name: 'Budget', path: '/budget', icon: Calculator },
@@ -338,6 +339,146 @@ const LandingPage = () => {
               <p className="text-zinc-600">{f.desc}</p>
             </motion.div>
           ))}
+        </div>
+
+        {/* How It Works Section */}
+        <div className="py-20 border-t border-zinc-100">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-zinc-900">How GlobalPath Works</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 relative max-w-5xl mx-auto">
+            {/* Steps */}
+            {[
+              { num: 1, title: 'Check Your Eligibility', desc: 'Enter your academics and get instant fit scores for universities' },
+              { num: 2, title: 'Build Your University List', desc: 'Compare programs, costs, and deadlines in one place' },
+              { num: 3, title: 'Generate Your SOP', desc: 'AI writes a personalized Statement of Purpose in minutes' }
+            ].map((step, i) => (
+              <div key={i} className="relative z-10 flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 bg-[#5B50E8] text-white rounded-full flex items-center justify-center text-2xl font-bold shadow-lg">
+                  {step.num}
+                </div>
+                <h3 className="text-xl font-bold text-zinc-900">{step.title}</h3>
+                <p className="text-zinc-600">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Testimonials */}
+        <div className="py-20 border-t border-zinc-100">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-zinc-900">Students Who Used GlobalPath</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                quote: "GlobalPath saved me weeks of research. The SOP generator alone is worth it.",
+                initials: "PS",
+                name: "Priya S.",
+                program: "MS CS at University of Toronto"
+              },
+              {
+                quote: "Finally a tool that explains visa requirements without confusing legal language. Highly recommend.",
+                initials: "AM",
+                name: "Arjun M.",
+                program: "MS Data Science at TU Munich"
+              },
+              {
+                quote: "The budget calculator showed me exact costs in INR. No surprises.",
+                initials: "SR",
+                name: "Sneha R.",
+                program: "MS Finance at NUS Singapore"
+              }
+            ].map((t, i) => (
+              <div key={i} className="p-8 bg-[#F7F7FF] rounded-3xl shadow-sm border border-indigo-50 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center space-x-4 mb-6">
+                    <div className="w-12 h-12 bg-[#5B50E8] text-white rounded-full flex items-center justify-center font-bold">
+                      {t.initials}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-zinc-900">{t.name}</h4>
+                      <p className="text-xs text-zinc-500">{t.program}</p>
+                    </div>
+                  </div>
+                  <p className="text-zinc-700 italic">"{t.quote}"</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Banner */}
+      <div className="w-full bg-[#5B50E8] py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center text-white">
+            <div>
+              <p className="text-4xl md:text-5xl font-bold mb-2">500+</p>
+              <p className="font-medium text-indigo-100">Students Helped</p>
+            </div>
+            <div>
+              <p className="text-4xl md:text-5xl font-bold mb-2">50+</p>
+              <p className="font-medium text-indigo-100">Universities Listed</p>
+            </div>
+            <div>
+              <p className="text-4xl md:text-5xl font-bold mb-2">10+</p>
+              <p className="font-medium text-indigo-100">Countries Covered</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* FAQ Section */}
+        <div className="py-20">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-zinc-900">Frequently Asked Questions</h2>
+          </div>
+          <div className="max-w-3xl mx-auto space-y-4">
+            {[
+              {
+                q: "Is GlobalPath free to use?",
+                a: "Yes, GlobalPath is completely free during beta. No hidden fees, no agent commissions."
+              },
+              {
+                q: "How is this different from going to an agent?",
+                a: "Agents charge ₹50,000–₹2,00,000 and often push universities that pay them commission. GlobalPath gives you unbiased, structured guidance for free."
+              },
+              {
+                q: "Is my data safe?",
+                a: "Yes. We use Firebase with industry-standard encryption. We never sell your data."
+              },
+              {
+                q: "Do I need to create an account?",
+                a: "You can explore countries and eligibility without signing up. An account is needed to save your application tracker and generated SOPs."
+              }
+            ].map((faq, i) => (
+              <details key={i} className="border border-zinc-200 rounded-2xl overflow-hidden bg-white group">
+                <summary className="w-full px-6 py-4 text-left font-bold text-zinc-900 flex justify-between items-center hover:bg-zinc-50 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  {faq.q}
+                  <span className="text-[#5B50E8] text-xl leading-none group-open:rotate-45 transition-transform duration-200">+</span>
+                </summary>
+                <div className="px-6 pb-4 text-zinc-600">
+                  <p>{faq.a}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Final CTA Section */}
+      <div className="w-full bg-[#F0EFFE] py-24">
+        <div className="max-w-3xl mx-auto px-4 text-center space-y-8">
+          <h2 className="text-4xl font-bold text-zinc-900">Ready to Plan Your Future Abroad?</h2>
+          <p className="text-xl text-zinc-600">Join hundreds of Indian students planning smarter with GlobalPath.</p>
+          <div>
+            <Link to="/countries" className="inline-block px-8 py-4 bg-[#5B50E8] text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+              Start Free — No Account Needed
+            </Link>
+            <p className="mt-4 text-sm text-zinc-500">No credit card. No agent. Just clarity.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -1280,9 +1421,20 @@ const BudgetCalculator = () => {
   const [duration, setDuration] = useState(1);
   const [country, setCountry] = useState('United States');
   const [countries, setCountries] = useState<Country[]>([]);
+  const [liveRates, setLiveRates] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchCountries().then(setCountries);
+    
+    // Fetch live exchange rates (base USD)
+    fetch('https://open.er-api.com/v6/latest/USD')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.rates) {
+          setLiveRates(data.rates);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -1296,14 +1448,23 @@ const BudgetCalculator = () => {
     }
   }, [country, countries]);
 
+  // Calculate INR rate based on live rates if available, otherwise fallback to hardcoded
+  const getRate = (code: string, fallback: number) => {
+    if (liveRates['INR'] && liveRates[code]) {
+      // Convert 1 unit of target currency to INR
+      return liveRates['INR'] / liveRates[code];
+    }
+    return fallback;
+  };
+
   const exchangeRates: Record<string, { rate: number, symbol: string, code: string }> = {
-    'United States': { rate: 94.76, symbol: '$', code: 'USD' },
-    'Germany': { rate: 109.20, symbol: '€', code: 'EUR' },
-    'Canada': { rate: 68.36, symbol: 'C$', code: 'CAD' },
-    'Australia': { rate: 64.90, symbol: 'A$', code: 'AUD' },
-    'United Kingdom': { rate: 125.87, symbol: '£', code: 'GBP' },
-    'New Zealand': { rate: 54.54, symbol: 'NZ$', code: 'NZD' },
-    'Other': { rate: 94.76, symbol: '$', code: 'USD' }
+    'United States': { rate: getRate('USD', 94.76), symbol: '$', code: 'USD' },
+    'Germany': { rate: getRate('EUR', 109.20), symbol: '€', code: 'EUR' },
+    'Canada': { rate: getRate('CAD', 68.36), symbol: 'C$', code: 'CAD' },
+    'Australia': { rate: getRate('AUD', 64.90), symbol: 'A$', code: 'AUD' },
+    'United Kingdom': { rate: getRate('GBP', 125.87), symbol: '£', code: 'GBP' },
+    'New Zealand': { rate: getRate('NZD', 54.54), symbol: 'NZ$', code: 'NZD' },
+    'Other': { rate: getRate('USD', 94.76), symbol: '$', code: 'USD' }
   };
 
   const currentRate = exchangeRates[country] || exchangeRates['Other'];
@@ -1333,11 +1494,59 @@ const BudgetCalculator = () => {
     }).format(val);
   };
 
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(20);
+    doc.text('GlobalPath - Budget Estimate', 14, 22);
+    
+    doc.setFontSize(12);
+    doc.text(`Target Country: ${country}`, 14, 32);
+    doc.text(`Duration: ${duration} Year(s)`, 14, 40);
+    doc.text(`Exchange Rate Used: 1 ${currentRate.code} = ${formatINR(currentRate.rate)}`, 14, 48);
+
+    autoTable(doc, {
+      startY: 55,
+      head: [['Expense Category', `Amount (${currentRate.code})`, 'Amount (INR)']],
+      body: [
+        ['Tuition Fee (Total)', formatLocal(tuition * duration), formatINR(tuition * duration * currentRate.rate)],
+        ['Living Cost (Total)', formatLocal(living * duration), formatINR(living * duration * currentRate.rate)],
+        ['Emergency Buffer (10%)', formatLocal(bufferLocal), formatINR(bufferLocal * currentRate.rate)],
+        ['Total Estimated Budget', formatLocal(totalWithBufferLocal), formatINR(totalINR)],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [79, 70, 229] }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    doc.setFontSize(14);
+    doc.text('Visa Requirements', 14, finalY + 15);
+    doc.setFontSize(10);
+    doc.text(`Minimum Proof of Funds Required: ${formatLocal(minProofLocal)} (≈ ${formatINR(minProofINR)})`, 14, finalY + 25);
+    
+    doc.save(`Budget_Estimate_${country.replace(/\s+/g, '_')}.pdf`);
+  };
+
   return (
     <div className="pt-24 pb-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-zinc-900">Budget Calculator</h2>
-        <p className="text-zinc-500">Calculate your expenses in both Indian Rupees (₹) and local currency.</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold text-zinc-900">Budget Calculator</h2>
+          <p className="text-zinc-500">Calculate your expenses in both Indian Rupees (₹) and local currency.</p>
+          {Object.keys(liveRates).length > 0 && (
+            <span className="inline-flex items-center mt-2 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-200">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
+              Using Live Exchange Rates
+            </span>
+          )}
+        </div>
+        <button 
+          onClick={downloadPDF}
+          className="flex items-center space-x-2 bg-zinc-900 text-white px-4 py-2 rounded-xl hover:bg-zinc-800 transition-colors shadow-sm"
+        >
+          <Download className="w-4 h-4" />
+          <span className="font-medium text-sm">Export PDF</span>
+        </button>
       </div>
       
       <div className="grid md:grid-cols-2 gap-8">
@@ -1742,6 +1951,177 @@ const AuthPage = () => {
   );
 };
 
+const UniversityMatcher = () => {
+  const [grades, setGrades] = useState('');
+  const [backlogs, setBacklogs] = useState('0');
+  const [englishScore, setEnglishScore] = useState('');
+  const [workExp, setWorkExp] = useState('0');
+  const [internships, setInternships] = useState('0');
+  const [budget, setBudget] = useState('');
+  const [course, setCourse] = useState('');
+  const [recommendations, setRecommendations] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleMatch = async () => {
+    if (!grades || !budget || !course) return;
+    setLoading(true);
+    try {
+      const prompt = `Act as an expert study abroad counselor. Based on the following student profile, recommend 3-5 universities globally that are a good fit, and provide a brief "Profile Strength Analysis" (e.g., mentioning specific visa categories they qualify for, like Canada SDS if IELTS is high enough).
+      
+      Profile:
+      - Grades/GPA: ${grades}
+      - Number of Backlogs: ${backlogs}
+      - IELTS/PTE Score: ${englishScore}
+      - Work Experience (Years): ${workExp}
+      - Number of Internships: ${internships}
+      - Budget (per year): ${budget}
+      - Preferred Course/Major: ${course}
+      
+      For each university, provide:
+      1. University Name & Country
+      2. Why it's a good match (considering their specific profile, backlogs, and work exp)
+      3. Estimated Tuition
+      4. Acceptance likelihood (Reach, Target, or Safety)
+      Format the response cleanly in Markdown.`;
+      
+      const response = await askAssistant(prompt, "");
+      setRecommendations(response);
+    } catch (error) {
+      console.error(error);
+      setRecommendations('Failed to get recommendations. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="pt-24 pb-16 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-zinc-900">AI University Matcher & Profile Strength Analyzer</h2>
+        <p className="text-zinc-500">Enter your profile details to see which countries and universities fit you best.</p>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-8">
+        <div className="bg-white border border-zinc-200 rounded-3xl p-8 space-y-6 shadow-sm h-fit">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-zinc-700">Grades / GPA</label>
+              <input 
+                type="text" 
+                value={grades} 
+                onChange={(e) => setGrades(e.target.value)}
+                className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="e.g., 3.8 or 85%"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-zinc-700">Backlogs</label>
+              <input 
+                type="number" 
+                value={backlogs} 
+                onChange={(e) => setBacklogs(e.target.value)}
+                className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-zinc-700">IELTS / PTE Score</label>
+              <input 
+                type="text" 
+                value={englishScore} 
+                onChange={(e) => setEnglishScore(e.target.value)}
+                className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="e.g., 7.5"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-zinc-700">Work Exp (Years)</label>
+              <input 
+                type="number" 
+                value={workExp} 
+                onChange={(e) => setWorkExp(e.target.value)}
+                className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-zinc-700">Internships</label>
+              <input 
+                type="number" 
+                value={internships} 
+                onChange={(e) => setInternships(e.target.value)}
+                className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-zinc-700">Budget (USD)</label>
+              <input 
+                type="text" 
+                value={budget} 
+                onChange={(e) => setBudget(e.target.value)}
+                className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="e.g., 30000"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-zinc-700">Preferred Course / Major</label>
+            <input 
+              type="text" 
+              value={course} 
+              onChange={(e) => setCourse(e.target.value)}
+              className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="e.g., MS in Computer Science"
+            />
+          </div>
+
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-start space-x-3">
+            <Shield className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-indigo-900">Agent-Free Mode</h4>
+              <p className="text-xs text-indigo-700 mt-1">This guide is designed to help you apply directly. You don't need an agent if you follow these steps carefully.</p>
+            </div>
+          </div>
+
+          <button 
+            onClick={handleMatch}
+            disabled={loading || !grades || !budget || !course}
+            className="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50 flex justify-center items-center"
+          >
+            {loading ? (
+              <span className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Analyzing Profile...</span>
+              </span>
+            ) : (
+              <span className="flex items-center space-x-2">
+                <Sparkles className="w-5 h-5" />
+                <span>Analyze My Profile</span>
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className="bg-white border border-zinc-200 rounded-3xl p-8 shadow-sm h-[650px] flex flex-col">
+          <h3 className="text-xl font-bold text-zinc-900 mb-4 shrink-0">Your Recommendations</h3>
+          {recommendations ? (
+            <div className="prose prose-indigo max-w-none text-zinc-700 overflow-y-auto flex-1 pr-4">
+              <div dangerouslySetInnerHTML={{ __html: recommendations.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-zinc-400 space-y-4">
+              <Globe className="w-12 h-12 opacity-20" />
+              <p className="text-center">Enter your details and click "Analyze My Profile" to get personalized university recommendations and visa category insights.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SopAssistant = () => {
   const [degree, setDegree] = useState('');
   const [university, setUniversity] = useState('');
@@ -1842,9 +2222,55 @@ const TimelinePlanner = () => {
     });
   };
 
+  const downloadPDF = () => {
+    if (!country) return;
+    const doc = new jsPDF();
+    
+    doc.setFontSize(20);
+    doc.text('GlobalPath - Timeline Planner', 14, 22);
+    
+    doc.setFontSize(12);
+    doc.text(`Target Country: ${country.name}`, 14, 32);
+    doc.text(`Target Intake: ${intake} ${year}`, 14, 40);
+
+    const tableData = country.timeline.map((item, i) => {
+      const isCompleted = (progress.timeline[selected] || []).includes(i);
+      return [
+        item.month,
+        item.task,
+        isCompleted ? 'Completed' : 'Pending'
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 48,
+      head: [['Timeframe', 'Task', 'Status']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [79, 70, 229] },
+      columnStyles: {
+        0: { cellWidth: 40 },
+        2: { cellWidth: 30 }
+      }
+    });
+
+    doc.save(`Timeline_${country.name.replace(/\s+/g, '_')}_${intake}_${year}.pdf`);
+  };
+
   return (
     <div className="pt-24 pb-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 className="text-3xl font-bold text-zinc-900 mb-8">Timeline Planner</h2>
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold text-zinc-900">Timeline Planner</h2>
+        {country && (
+          <button 
+            onClick={downloadPDF}
+            className="flex items-center space-x-2 bg-zinc-900 text-white px-4 py-2 rounded-xl hover:bg-zinc-800 transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            <span className="font-medium text-sm">Export PDF</span>
+          </button>
+        )}
+      </div>
       <div className="grid md:grid-cols-3 gap-6 mb-12">
         <div className="space-y-2">
           <label className="text-sm font-bold text-zinc-700">Country</label>
@@ -2019,6 +2445,7 @@ export default function App() {
           
           <Route path="/countries" element={<ProtectedRoute><CountryList /></ProtectedRoute>} />
           <Route path="/countries/:countryName" element={<ProtectedRoute><CountryDetail /></ProtectedRoute>} />
+          <Route path="/matcher" element={<ProtectedRoute><UniversityMatcher /></ProtectedRoute>} />
           <Route path="/eligibility" element={<ProtectedRoute><EligibilityChecker /></ProtectedRoute>} />
           <Route path="/sop-assistant" element={<ProtectedRoute><SopAssistant /></ProtectedRoute>} />
           <Route path="/applications" element={<ProtectedRoute><ApplicationTracker /></ProtectedRoute>} />
@@ -2029,28 +2456,52 @@ export default function App() {
         </Routes>
         <Assistant />
         
-        <footer className="border-t border-zinc-100 py-12 mt-20 bg-zinc-50">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-              <p className="text-zinc-400 text-sm">© 2026 GlobalPath. All rights reserved.</p>
-              <div className="flex items-center gap-4">
-                <a 
-                  href="https://www.linkedin.com/in/sukruth-cr-7061a0257/" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-zinc-500 hover:text-indigo-600 transition-colors text-sm font-medium"
-                >
-                  <Linkedin className="w-4 h-4" />
-                  <span>Connect with Sukruth CR</span>
-                </a>
+        <footer className="bg-zinc-900 border-t border-zinc-800 text-zinc-400 py-12 mt-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-4 gap-8">
+            <div className="col-span-1 md:col-span-2 space-y-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-[#5B50E8] rounded-lg flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-white tracking-tight border-b-2 border-[#5B50E8]">
+                  GlobalPath
+                </span>
               </div>
-            </div>
-            
-            <div className="pt-8 border-t border-zinc-200 text-center md:text-left">
-              <p className="text-xs text-zinc-400 leading-relaxed max-w-3xl">
-                <strong>Disclaimer:</strong> GlobalPath provides structured documentation guidance based on publicly available visa requirements. 
-                Final decisions are made by respective immigration authorities. We are a guidance platform, not a legal immigration firm.
+              <p className="text-sm text-zinc-400 max-w-sm">
+                Empowering Indian students to study abroad without paying exorbitant agent fees. 
+                Clear guides, smart tools, and zero hidden costs.
               </p>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-4">Features</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/eligibility" className="hover:text-white transition-colors">Profile Analyzer</Link></li>
+                <li><Link to="/countries" className="hover:text-white transition-colors">Country Guides</Link></li>
+                <li><Link to="/budget" className="hover:text-white transition-colors">Budget Estimator</Link></li>
+                <li><Link to="/timeline" className="hover:text-white transition-colors">Timeline Planner</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-4">Connect</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a href="https://www.linkedin.com/in/sukruth-cr-7061a0257/" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 hover:text-white transition-colors">
+                    <Linkedin className="w-4 h-4" />
+                    <span>Sukruth CR (Founder)</span>
+                  </a>
+                </li>
+                <li><a href="#" className="hover:text-white transition-colors">Contact Support</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-zinc-800 text-sm flex flex-col md:flex-row justify-between items-center">
+            <p>© 2026 GlobalPath. All rights reserved.</p>
+            <div className="flex space-x-6 mt-4 md:mt-0">
+              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
             </div>
           </div>
         </footer>
