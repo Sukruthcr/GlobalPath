@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.qzz.globalpath",
+        "sha256_cert_fingerprints": ["13:CA:9A:5C:3E:93:75:20:2A:83:57:F9:17:9F:69:B8:28:42:63:8F:C7:5B:59:3B:50:9F:11:05:36:A9:C7:70"]
+      }
+    }]
