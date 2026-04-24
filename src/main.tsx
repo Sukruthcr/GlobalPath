@@ -7,10 +7,15 @@ import { Analytics } from '@vercel/analytics/react';
 import App from './App.tsx';
 import './index.css';
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
-      console.log('Service worker registration failed: ', err);
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        registration.unregister();
+      }
+    });
+    caches.keys().then((keys) => {
+      keys.forEach((key) => caches.delete(key));
     });
   });
 }
