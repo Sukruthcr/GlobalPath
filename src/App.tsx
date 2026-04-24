@@ -2432,6 +2432,56 @@ const AdminPanel = () => {
   );
 };
 
+const PrivacyPolicy = () => {
+  return (
+    <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+      <h1 className="text-4xl font-extrabold text-zinc-900 tracking-tight mb-8">Privacy Policy</h1>
+      <div className="prose prose-indigo max-w-none text-zinc-600 space-y-6">
+        <p className="font-medium text-zinc-500">Last Updated: April 24, 2026</p>
+        
+        <div>
+          <h2 className="text-2xl font-bold text-zinc-900 mt-8 mb-4">1. Information We Collect</h2>
+          <p>
+            When you register for a GlobalPath account, we collect personal data including your name, email address, academic background, and study abroad preferences. We also collect usage data to improve our services and AI matching capabilities.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold text-zinc-900 mt-8 mb-4">2. How We Use Your Information</h2>
+          <p className="mb-2">The information we collect is used to:</p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>Provide personalized university recommendations</li>
+            <li>Facilitate the SOP generation process</li>
+            <li>Power our budget estimation and timeline planning tools</li>
+            <li>Communicate with you regarding our services and updates</li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold text-zinc-900 mt-8 mb-4">3. Data Sharing and Security</h2>
+          <p>
+            We prioritize your privacy and do not sell your personal data to third parties. Your information may be shared with our trusted AI partners (like Google Gemini) solely for the purpose of analyzing your profile and providing recommendations. We implement industry-standard security measures to protect your data.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold text-zinc-900 mt-8 mb-4">4. Your Rights</h2>
+          <p>
+            You have the right to access, modify, or delete your personal data at any time. If you wish to exercise these rights, please contact our support team.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold text-zinc-900 mt-8 mb-4">5. Contact Us</h2>
+          <p>
+            For any questions or concerns regarding this Privacy Policy, please contact us at support@globalpath.qzz.io.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 export default function App() {
@@ -2453,6 +2503,7 @@ export default function App() {
           <Route path="/budget" element={<ProtectedRoute><BudgetCalculator /></ProtectedRoute>} />
           <Route path="/timeline" element={<ProtectedRoute><TimelinePlanner /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
         </Routes>
         <Assistant />
         
@@ -2500,7 +2551,7 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-zinc-800 text-sm flex flex-col md:flex-row justify-between items-center">
             <p>© 2026 GlobalPath. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+              <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
             </div>
           </div>
