@@ -2482,6 +2482,47 @@ const PrivacyPolicy = () => {
   );
 };
 
+// --- Data Deletion ---
+const DeleteAccount = () => {
+  return (
+    <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto min-h-screen">
+      <h1 className="text-4xl font-extrabold text-zinc-900 tracking-tight mb-8">Account & Data Deletion</h1>
+      <div className="prose prose-indigo max-w-none text-zinc-600 space-y-6">
+        <p className="font-medium text-zinc-500">Last Updated: April 27, 2026</p>
+        
+        <p>
+          At GlobalPath, we respect your privacy and provide you with full control over your personal data. 
+          If you wish to delete your account and all associated data, follow the steps below.
+        </p>
+
+        <div>
+          <h2 className="text-2xl font-bold text-zinc-900 mt-8 mb-4">How to Request Deletion</h2>
+          <p>
+            To request the complete deletion of your account and all associated data, please send an email to:
+            <br/>
+            <a href="mailto:sukruthcr8269@gmail.com" className="text-indigo-600 font-semibold hover:underline">sukruthcr8269@gmail.com</a>
+          </p>
+        </div>
+
+        <div>
+           <h2 className="text-2xl font-bold text-zinc-900 mt-8 mb-4">What Data Will Be Deleted?</h2>
+           <p>Upon verifying your request, we will permanently delete the following information from our servers within 30 days:</p>
+           <ul className="list-disc pl-6 space-y-1">
+            <li>Your user profile (Name, Email from Google Sign-in)</li>
+            <li>Saved university preferences and guides</li>
+            <li>Budget estimations and timelines</li>
+            <li>Profile analyzer data</li>
+           </ul>
+        </div>
+        
+        <div className="mt-8 p-4 bg-red-50 text-red-800 rounded-lg border border-red-100">
+          <strong>Note:</strong> This action is irreversible. Once your data is deleted, it cannot be recovered.
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 export default function App() {
@@ -2504,6 +2545,7 @@ export default function App() {
           <Route path="/timeline" element={<ProtectedRoute><TimelinePlanner /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/delete-account" element={<DeleteAccount />} />
         </Routes>
         <Assistant />
         
@@ -2552,6 +2594,7 @@ export default function App() {
             <p>© 2026 GlobalPath. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+              <Link to="/delete-account" className="hover:text-white transition-colors">Data Deletion</Link>
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
             </div>
           </div>
