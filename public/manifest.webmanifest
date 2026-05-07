@@ -8,22 +8,19 @@
   "background_color": "#ffffff",
   "theme_color": "#5B50E8",
   "orientation": "portrait",
+  "categories": ["education", "productivity", "utilities"],
+  "prefer_related_applications": false,
+  "related_applications": [],
   "icons": [
     {
       "src": "/logo.png",
-      "sizes": "192x192",
+      "sizes": "1024x1024 any",
       "type": "image/png",
       "purpose": "any"
     },
     {
       "src": "/logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo.png",
-      "sizes": "512x512",
+      "sizes": "1024x1024 any",
       "type": "image/png",
       "purpose": "maskable"
     }
